@@ -1,0 +1,1636 @@
+{% extends 'main.html' %}
+
+{% block content %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Request Form - Approval Workflow</title>
+    <link href="assets/img/favicon.png" rel="icon">
+    <link href="assets/img/apple-touch-icon.png" rel="apple-touch-icon">
+    <link href="assets/css/style.css" rel="stylesheet">
+</head>
+
+<body>
+    <main id="main" class="main" style="margin-left: 300px; max-width: 75%;">
+        <div class="pagetitle">
+            <h5 class="card-title">Approval</h5>
+            <nav>
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item active">Request Form</li>
+                    <li class="breadcrumb-item"><a href="{% url 'approval_list' %}">approval_list</a></li> <!--pending approval -->
+                    <li class="breadcrumb-item"><a href="{% url 'approval_details' %}">approval_details</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'request_history' %}">request_history</a></li>
+                </ol>
+            </nav>
+        </div><!-- End Page Title -->
+
+        <section class="section">
+            <div class="card">
+                
+                <div class="card-body pt-3">
+                    <!-- Bootstrap Navigation Tabs -->
+                    <ul class="nav nav-tabs nav-tabs-bordered">
+                        <li class="nav-item">
+                            <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#request-form">Request Form</button>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'approval_list' %}">Pending Approvals</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'approval_details' %}">Approval Details</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'request_history' %}">Request History</a>
+                        </li>
+                    </ul>
+                    <div class="tab-content pt-2">
+
+                        <div class="tab-pane fade show active profile-overview" id="profile-overview">
+                        <h2 class="card-title">Document</h2>
+                    </div>
+
+                    <form>
+                        <!-- Document ID (Auto-generated) -->
+                        <div class="mb-3">
+                            <label for="doc-id" class="form-label">Document ID</label>
+                            <input type="text" class="form-control" id="doc-id" readonly>
+                        </div>
+
+                        <!-- Date Field (Auto-filled with today's date) -->
+                        <div class="mb-3">
+                            <label for="date" class="form-label">Date</label>
+                            <input type="text" class="form-control" id="date" readonly>
+                        </div>
+
+                        <!-- Description Text Area -->
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Description</label>
+                            <textarea class="form-control" id="description" rows="5" placeholder="Enter detailed information..."></textarea>
+                        </div>
+
+                        <!-- Highlight Points Section -->
+                        <div class="mb-3">
+                            <label class="form-label">Highlight Points</label>
+                            <div id="highlight-container">
+                                <div class="input-group mb-2 highlight-point">
+                                    <input type="text" class="form-control" placeholder="Enter highlight point">
+                                    <button type="button" class="btn btn-danger remove-btn">Delete</button>
+                                </div>
+                            </div>
+                            <button type="button" class="btn btn-success" id="add-highlight">Add Highlight</button>
+                        </div>
+
+                        <!-- Table to Add Rows -->
+                        <div class="mb-3">
+                            <label class="form-label">Requirements Table</label>
+                            <table class="table" id="requirements-table">
+                                <thead>
+                                    <tr>
+                                        <th>S.no</th>
+                                        <th>Requirement</th>
+                                        <th>Quantity</th>
+                                        <th>Price</th>
+                                        <th>Amount</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr class="requirement-row">
+                                        <td><input type="number" class="form-control" placeholder="S.no" ></td>
+                                        <td><input type="text" class="form-control" placeholder="Enter requirement"></td>
+                                        <td><input type="number" class="form-control quantity" placeholder="Enter quantity"></td>
+                                        <td><input type="number" class="form-control price" placeholder="Enter price"></td>
+                                        <td><input type="text" class="form-control amount" readonly></td>
+                                        <td><button type="button" class="btn btn-danger remove-row">Delete</button></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                            <button type="button" class="btn btn-success" id="add-row">Add Row</button>
+                            <!-- <button type="button" class="btn btn-primary" id="calculate-amounts">Calculate Amounts</button> -->
+                        </div>
+                        <!-- <div class="mb-3">
+                            <label class="form-label">Select Approvers</label>
+                            <div id="approvers-container">
+                                <div class="input-group mb-2 approver-field">
+                                    <select class="form-control" onchange="updateApproverOptions()">
+                                        <option value="">Select Approver</option>
+                                        <option value="User1">User 1</option>
+                                        <option value="User2">User 2</option>
+                                        <option value="User3">User 3</option>
+                                    </select>
+                                    <button type="button" class="btn btn-danger remove-approver">Delete</button>
+                                </div>
+                            </div>
+                            <button type="button" class="btn btn-success" id="add-approver">Add Approver</button>
+                        </div> -->
+                         <!-- Select Approvers from Django Admin -->
+                         <div class="mb-3">
+                            <label class="form-label">Select Approvers</label>
+                            <div id="approvers-container">
+                                <div class="input-group mb-2 approver-field">
+                                    <select class="form-control approver-select" name="approvers[]" onchange="updateApproverOptions()">
+                                        <option value="">Select Approver</option>
+                                        {% for user in users %}
+                                        <option value="{{ user.id }}">{{ user.username }}</option>
+                                        {% endfor %}
+                                    </select>
+                                    <button type="button" class="btn btn-danger remove-approver">Delete</button>
+                                </div>
+                            </div>
+                            <button type="button" class="btn btn-success" id="add-approver">Add Approver</button>
+                        </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary">Submit</button>
+                    </form>
+                </div>
+            </div>
+        </section>
+    </main><!-- End #main -->
+
+    <a href="#" class="back-to-top d-flex align-items-center justify-content-center"><i class="bi bi-arrow-up-short"></i></a>
+
+    <!-- Vendor JS Files -->
+    <script src="assets/vendor/apexcharts/apexcharts.min.js"></script>
+    <script src="assets/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+    <script src="assets/vendor/chart.js/chart.umd.js"></script>
+    <script src="assets/vendor/echarts/echarts.min.js"></script>
+    <script src="assets/vendor/quill/quill.min.js"></script>
+    <script src="assets/vendor/simple-datatables/simple-datatables.js"></script>
+    <script src="assets/vendor/tinymce/tinymce.min.js"></script>
+    <script src="assets/vendor/php-email-form/validate.js"></script>
+
+    <!-- Template Main JS File -->
+    <script src="assets/js/main.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            // Auto-generate Document ID (Example: Incrementing ID)
+            let docId = localStorage.getItem("docId") || 1000;
+            document.getElementById("doc-id").value = "DOC-" + docId;
+            localStorage.setItem("docId", ++docId);
+    
+            // Set today's date
+            let today = new Date().toISOString().split('T')[0];
+            document.getElementById("date").value = today;
+
+            document.getElementById("add-highlight").addEventListener("click", function () {
+            let container = document.getElementById("highlight-container");
+            let newInput = document.createElement("div");
+            newInput.classList.add("input-group", "mb-2", "highlight-point");
+            newInput.innerHTML = '<input type="text" class="form-control" placeholder="Enter highlight point">' +
+                '<button type="button" class="btn btn-danger remove-btn">Delete</button>';
+            container.appendChild(newInput);
+        });
+    
+            // Add Row to Table
+            document.getElementById("add-row").addEventListener("click", function () {
+                let tableBody = document.querySelector("#requirements-table tbody");
+                let newRow = document.createElement("tr");
+                newRow.classList.add("requirement-row");
+                newRow.innerHTML = '<td><input type="text" class="form-control" placeholder="S.no"></td>' +
+                    '<td><input type="text" class="form-control" placeholder="Enter requirement"></td>' +
+                    '<td><input type="number" class="form-control quantity" placeholder="Enter quantity"></td>' +
+                    '<td><input type="number" class="form-control price" placeholder="Enter price"></td>' +
+                    '<td><input type="text" class="form-control amount" readonly></td>' +  <!-- Amount column -->
+                    '<td><button type="button" class="btn btn-danger remove-row">Delete</button></td>';
+                tableBody.appendChild(newRow);
+    
+                // Add event listeners to quantity and price fields to calculate amount
+                let quantityField = newRow.querySelector(".quantity");
+                let priceField = newRow.querySelector(".price");
+                
+                // Recalculate amount whenever quantity or price is updated
+                quantityField.addEventListener("input", updateAmount);
+                priceField.addEventListener("input", updateAmount);
+    
+                // Function to update the amount in the row
+                function updateAmount() {
+                    let quantity = parseFloat(quantityField.value) || 0;
+                    let price = parseFloat(priceField.value) || 0;
+                    let amount = quantity * price;
+                    newRow.querySelector(".amount").value = amount.toFixed(2); // Format to 2 decimal places
+                }
+    
+                // Initial calculation for new row
+                updateAmount();
+            });
+    
+            // Automatically calculate amount for first row if available
+            let firstRow = document.querySelector("#requirements-table tbody tr");
+            if (firstRow) {
+                let quantityField = firstRow.querySelector(".quantity");
+                let priceField = firstRow.querySelector(".price");
+                quantityField.addEventListener("input", updateAmount);
+                priceField.addEventListener("input", updateAmount);
+    
+                function updateAmount() {
+                    let quantity = parseFloat(quantityField.value) || 0;
+                    let price = parseFloat(priceField.value) || 0;
+                    let amount = quantity * price;
+                    firstRow.querySelector(".amount").value = amount.toFixed(2); // Format to 2 decimal places
+                }
+    
+                // Initial calculation for first row
+                updateAmount();
+            }
+            document.addEventListener("click", function (event) {
+            if (event.target.classList.contains("remove-btn")) {
+                // If the delete button is clicked inside a highlight point, remove the entire input group
+                let highlightPoint = event.target.closest(".highlight-point");
+                if (highlightPoint) {
+                    highlightPoint.remove();
+                    }
+                }
+            });
+
+            // Remove Row or Highlight Point (Event Delegation)
+            document.addEventListener("click", function (event) {
+                if (event.target.classList.contains("remove-row")) {
+                    // If the delete button is clicked inside a row, remove the entire row
+                    let row = event.target.closest("tr");
+                    if (row) {
+                        row.remove();
+                    }
+                }
+            });
+
+        });
+        // function updateApproverOptions() {
+        //     let selectedValues = Array.from(document.querySelectorAll("#approvers-container select")).map(select => select.value);
+        //     document.querySelectorAll("#approvers-container select").forEach(select => {
+        //         Array.from(select.options).forEach(option => {
+        //             if (option.value && selectedValues.includes(option.value) && select.value !== option.value) {
+        //                 option.disabled = true;
+        //             } else {
+        //                 option.disabled = false;
+        //             }
+        //         });
+        //     });
+        // }
+        function updateApproverOptions() {
+            let selectedValues = Array.from(document.querySelectorAll(".approver-select")).map(select => select.value);
+            document.querySelectorAll(".approver-select").forEach(select => {
+                Array.from(select.options).forEach(option => {
+                    if (option.value && selectedValues.includes(option.value) && select.value !== option.value) {
+                        option.disabled = true;
+                    } else {
+                        option.disabled = false;
+                    }
+                });
+            });
+        }
+        document.getElementById("add-approver").addEventListener("click", function () {
+            let container = document.getElementById("approvers-container");
+            let newInput = document.createElement("div");
+            newInput.classList.add("input-group", "mb-2", "approver-field");
+            newInput.innerHTML = '<select class="form-control approver-select" name="approvers[]" onchange="updateApproverOptions()">' +
+                '<option value="">Select Approver</option>' +
+                '{% for user in users %}<option value="{{ user.id }}">{{ user.username }}</option>{% endfor %}' +
+                '</select>' +
+                '<button type="button" class="btn btn-danger remove-approver">Delete</button>';
+            container.appendChild(newInput);
+            updateApproverOptions();
+        });
+        // document.getElementById("add-approver").addEventListener("click", function () {
+        //     let container = document.getElementById("approvers-container");
+        //     let newInput = document.createElement("div");
+        //     newInput.classList.add("input-group", "mb-2", "approver-field");
+        //     newInput.innerHTML = '<select class="form-control" onchange="updateApproverOptions()">' +
+        //         '<option value="">Select Approver</option>' +
+        //         '<option value="User1">User 1</option>' +
+        //         '<option value="User2">User 2</option>' +
+        //         '<option value="User3">User 3</option>' +
+        //         '</select>' +
+        //         '<button type="button" class="btn btn-danger remove-approver">Delete</button>';
+        //     container.appendChild(newInput);
+        //     updateApproverOptions();
+        // });
+
+        document.addEventListener("click", function (event) {
+            if (event.target.classList.contains("remove-approver")) {
+                event.target.parentElement.remove();
+                updateApproverOptions();
+            }
+        });
+    </script>
+    
+</body>
+
+</html>
+{% endblock content %}
+
+<!-- request_history.html -->
+{% extends 'main.html' %}
+{% block content %}
+<main id="main" class="main" style="margin-left: 300px; max-width: 75%;">
+    <div class="pagetitle">
+        <h5 class="card-title">Approval</h5>
+    </div>
+    <section class="section">
+        <div class="card">
+            <div class="card-body pt-3">
+                <ul class="nav nav-tabs nav-tabs-bordered">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'document' %}">Request_form</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'approval_list' %}">Pending Approvals</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'approval_details' %}">Approval Details</a>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#request-form">request_history</button>
+                    </li>
+                </ul>
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Document ID</th>
+                            <th>Requirement Type</th>
+                            <th>Status</th>
+                            <th>Created At</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for request in requests %}
+                        <tr>
+                            <td>{{ request.doc_number }}</td>
+                            <td>{{ request.description }}</td>
+                            <td>Pending</td>
+                            <td>{{ request.created_at }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+</main>
+{% endblock content %}
+
+def document(request):
+    users = User.objects.all()
+
+    if request.method == "POST":
+        doc_number = request.POST.get("doc-id")
+        description = request.POST.get("description", "No description provided")  # Default if empty
+
+        # Create Request Entry
+        new_request = RequestForm.objects.create(
+            doc_number=doc_number,
+            description=description
+        )
+
+        # Store Highlight Points
+        highlight_points = request.POST.getlist("highlight_points[]")
+        for point in highlight_points:
+            if point.strip():  # Avoid empty values
+                HighlightPoint.objects.create(request=new_request, point=point.strip())
+
+
+        # Store Requirements
+        requirements = request.POST.getlist("requirement[]")
+        quantities = request.POST.getlist("quantity[]")
+        prices = request.POST.getlist("price[]")  # Price values should be decimals
+        descriptions = request.POST.getlist("req_description[]")
+
+        for i in range(len(requirements)):
+            if requirements[i].strip():  # Avoid empty values
+                quantity = int(quantities[i]) if quantities[i] else 0
+                price = float(prices[i]) if prices[i] else 0.00  # Ensure float format
+                amount = round(quantity * price, 2)  # Multiply correctly and format to 2 decimal places
+
+                Requirement.objects.create(
+                    request=new_request,
+                    requirement_name=requirements[i],
+                    quantity=quantity,
+                    price=price,  # ✅ Ensure it's a single float value
+                    amount=amount,
+                    description=descriptions[i] if descriptions[i] else ""
+                )
+        approvers = request.POST.getlist("approvers[]")
+        for user_id in approvers:
+                    approver = User.objects.get(id=user_id)
+                    Approval.objects.create(request=new_request, approver=approver)        
+        return redirect("request_history")  
+
+    return render(request, "document.html", {"users": users})
+ 
+this is not workingin request form page i hover over only field the mouse becomes invissibl what could be the issue?
+
+
+
+//////////////////////////////////////////////////////////////////////////
+
+@login_required
+def document(request):
+    users = User.objects.exclude(id=request.user.id)
+
+    # Get last saved request to determine the next doc-id
+    with transaction.atomic():
+        last_doc = RequestForm.objects.order_by("-doc_number").select_for_update().first()
+        next_doc_number = f"DOC-{(int(last_doc.doc_number.split('-')[1]) + 1) if last_doc else 1001}"
+
+    if request.method == "POST":
+        doc_number = request.POST.get("doc-id", next_doc_number)  # Use the correct doc-id
+        description = request.POST.get("description", "No description provided")  # Default if empty
+
+        # Create Request Entry with unique doc_number
+        new_request = RequestForm.objects.create(
+            doc_number=doc_number,
+            description=description,
+            created_by=request.user  # ✅ Assign the logged-in user
+        )
+
+        # Store Highlight Points
+        highlight_points = request.POST.getlist("highlight_points[]")
+        for point in highlight_points:
+            if point.strip():  # Avoid empty values
+                HighlightPoint.objects.create(request=new_request, point=point.strip())
+
+        # Store Requirements
+        requirements = request.POST.getlist("requirement[]")
+        quantities = request.POST.getlist("quantity[]")
+        prices = request.POST.getlist("price[]")  # Price values should be decimals
+        descriptions = request.POST.getlist("req_description[]")
+
+        for i in range(len(requirements)):
+            if requirements[i].strip():  # Avoid empty values
+                quantity = int(quantities[i]) if quantities[i] else 0
+                price = float(prices[i]) if prices[i] else 0.00  # Ensure float format
+                amount = round(quantity * price, 2)  # Multiply correctly and format to 2 decimal places
+
+                Requirement.objects.create(
+                    request=new_request,
+                    requirement_name=requirements[i],
+                    quantity=quantity,
+                    price=price,  # ✅ Ensure it's a single float value
+                    amount=amount,
+                    description=descriptions[i] if descriptions[i] else ""
+                )
+
+        # Store Approvers
+        approvers = request.POST.getlist("approvers[]")
+        approver_emails = []
+        if not approvers:  # Ensure approvers are selected
+            return render(request, "document.html", {"users": users, "next_doc_number": next_doc_number, "error": "Please select at least one approver"})
+
+        for user_id in approvers:
+            approver = User.objects.get(id=user_id)
+            Approval.objects.create(request=new_request, approver=approver, status="Pending")  # Assign with "Pending" status
+            if approver.email:
+                approver_emails.append(approver.email)
+
+        if approver_emails:
+            send_mail(
+                subject=f"New Approval Request: {doc_number}",
+                message=f"A new approval request ({doc_number}) has been submitted and a flow has began.",
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=approver_emails,
+                fail_silently=False,
+            )
+        
+        return redirect("request_history")  # Redirect to history page after saving
+
+    return render(request, "document.html", {"users": users, "next_doc_number": next_doc_number})
+
+
+    
+
+    document.addEventListener("DOMContentLoaded", function () {
+        console.log("Page Loaded: JS is working!");
+    
+        document.querySelectorAll(".open-approval-modal").forEach(button => {
+            button.addEventListener("click", function () {
+                let approvalId = this.getAttribute("data-approval-id");  // Fetch approval ID
+                console.log("Clicked Review Button - Approval ID:", approvalId);
+    
+                fetch(`/get_approval_details/${approvalId}/`)
+                    .then(response => response.json())
+                    .then(data => {
+                        console.log("Received Data:", data);
+                        if (data.error) {
+                            alert("Error: " + data.error);
+                            return;
+                        }
+    
+                        document.getElementById("modal-doc-id").textContent = data.doc_number || "N/A";
+                        document.getElementById("modal-requester").textContent = data.created_by || "N/A";
+                        document.getElementById("modal-description").textContent = data.description || "N/A";
+                        document.getElementById("modal-status").textContent = data.status || "Pending";
+                        document.getElementById("modal-approval-id").value = approvalId;
+    
+                        let highlightContainer = document.getElementById("modalHighlightPoints");
+                        highlightContainer.innerHTML = "";
+                        data.highlights.forEach(point => {
+                            let li = document.createElement("li");
+                            li.textContent = point;
+                            highlightContainer.appendChild(li);
+                        });
+    
+                        let requirementsContainer = document.getElementById("modalRequirements");
+                        requirementsContainer.innerHTML = "";
+                        data.requirements.forEach(req => {
+                            let row = `
+                                <tr>
+                                    <td>${req.requirement_name}</td>
+                                    <td>${req.quantity}</td>
+                                    <td>${req.price}</td>
+                                    <td>${req.amount}</td>
+                                    <td>${req.description}</td>
+                                </tr>
+                            `;
+                            requirementsContainer.innerHTML += row;
+                        });
+    
+                        let modalElement = document.getElementById("approvalModal");
+                        if (!modalElement) {
+                            console.error("Modal element not found!");
+                            return;
+                        }
+    
+                        let modal = new bootstrap.Modal(modalElement);
+                        modal.show();
+                    })
+                    .catch(error => console.error("Error fetching approval details:", error));
+            });
+        });
+    });
+
+    document.addEventListener("DOMContentLoaded", function () {
+        document.querySelectorAll(".approve-btn, .reject-btn").forEach(button => {
+            button.addEventListener("click", function () {
+                let action = this.classList.contains("approve-btn") ? "approve" : "reject";
+                let approvalId = document.getElementById("modal-approval-id").value;
+                let comments = document.getElementById("approval-comments").value;
+    
+                fetch("/submit_approval/", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/x-www-form-urlencoded",
+                        "X-CSRFToken": getCookie("csrftoken")
+                    },
+                    body: `approval_id=${approvalId}&action=${action}&comments=${encodeURIComponent(comments)}`
+                })
+                .then(response => response.json())
+                .then(data => {
+                    alert(data.message);
+                    location.reload();
+                })
+                .catch(error => console.error("Error submitting approval:", error));
+            });
+        });
+    });
+    // Function to get CSRF token for AJAX requests
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== "") {
+        let cookies = document.cookie.split(";");
+        for (let i = 0; i < cookies.length; i++) {
+            let cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + "=")) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+# @login_required
+# def submit_approval(request):
+#     if request.method == "POST":
+#         approval_id = request.POST.get("approval_id")
+#         action = request.POST.get("action")
+#         comments = request.POST.get("comments", "")
+
+#         approval = get_object_or_404(Approval, id=approval_id, approver=request.user)
+
+#         if action == "approve":
+#             approval.status = "Approved"
+#             approval.comments = comments
+#             approval.save()
+
+#             # Get the next approver in line
+#             next_approval = Approval.objects.filter(request=approval.request, status="On Hold").order_by("id").first()
+            
+#             if next_approval:
+#                 next_approval.status = "Pending"
+#                 next_approval.save()
+
+#                 # Notify the next approver
+#                 send_mail(
+#                     subject=f"Approval Needed: {approval.request.doc_number}",
+#                     message=f"You have been assigned as the next approver for Document ID {approval.request.doc_number}. Please review it.",
+#                     from_email=settings.DEFAULT_FROM_EMAIL,
+#                     recipient_list=[next_approval.approver.email],
+#                     fail_silently=False,
+#                 )
+#             else:
+#                 # If no next approver, the approval process is complete
+#                 send_mail(
+#                     subject=f"Approval Complete: {approval.request.doc_number}",
+#                     message=f"All approvers have approved the request for Document ID {approval.request.doc_number}.",
+#                     from_email=settings.DEFAULT_FROM_EMAIL,
+#                     recipient_list=[approval.request.created_by.email],
+#                     fail_silently=False,
+#                 )
+
+#             return JsonResponse({"message": "Approval submitted successfully."})
+
+#         elif action == "reject":
+#             approval.status = "Rejected"
+#             approval.comments = comments
+#             approval.save()
+
+#             # If rejected, mark the request as rejected and notify all parties
+#             Approval.objects.filter(request=approval.request).update(status="Rejected")
+
+#             recipients = list(approval.request.approvals.values_list("approver__email", flat=True))
+#             recipients.append(approval.request.created_by.email)
+
+#             send_mail(
+#                 subject=f"Approval Rejected: {approval.request.doc_number}",
+#                 message=f"The approval request for Document ID {approval.request.doc_number} has been rejected by {request.user.username}. Comments: {comments}",
+#                 from_email=settings.DEFAULT_FROM_EMAIL,
+#                 recipient_list=recipients,
+#                 fail_silently=False,
+#             )
+
+#             return JsonResponse({"message": "Approval request rejected."})
+
+# approvers = request.POST.getlist("approvers[]")
+        # approver_emails = []
+        # if not approvers:  # Ensure approvers are selected
+        #     return render(request, "document.html", {"users": users, "next_doc_number": next_doc_number, "error": "Please select at least one approver"})
+
+        # approver_users = [User.objects.get(id=int(user_id)) for user_id in approvers if user_id.isdigit()]
+
+        # for user_id in enumerate(approvers):   # before just approvers:
+        #     approver = request.POST.getlist("approvers[]")
+        #     approver_users = [User.objects.get(id=int(user_id)) for user_id in approvers if user_id.isdigit()]
+
+        #     Approval.objects.create(request=new_request, approver=approver, status="Pending")  # Assign with "Pending" status
+        #     if approver.email:
+        #         approver_emails.append(approver.email)
+
+        # if approver_emails:
+        #     send_mail(
+        #         subject=f"New Approval Request: {doc_number}",
+        #         message=f"A new approval request ({doc_number}) has been submitted and a flow has began.",
+        #         from_email=settings.DEFAULT_FROM_EMAIL,
+        #         recipient_list=approver_emails,
+        #         fail_silently=False,
+        #     )
+        
+        # if approver_users:
+        #     first_approver = approver_users[0]
+        #     send_mail(
+        #         subject=f"Approval Needed: {doc_number}",
+        #         message=f"You have been assigned as the first approver for Document ID {doc_number}. Please review it.",
+        #         from_email=settings.DEFAULT_FROM_EMAIL,
+        #         recipient_list=[first_approver.email],
+        #         fail_silently=False,
+        #     )
+        document.addEventListener("DOMContentLoaded", function () {
+            document.querySelectorAll(".doc-link").forEach(link => {
+                link.addEventListener("click", function (event) {
+                    event.preventDefault();
+                    let docId = this.getAttribute("data-doc-id");
+    
+                    // Fetch request details via AJAX
+                    fetch(`/get_request_details/${docId}/`)
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                document.getElementById("modalDocId").textContent = data.doc_number;
+                                document.getElementById("modalDescription").textContent = data.description;
+                                document.getElementById("modalCreatedBy").textContent = data.created_by;
+                                document.getElementById("modalCreatedAt").textContent = data.created_at;
+    
+                                // Populate Highlight Points
+                                let highlightContainer = document.getElementById("modalHighlightPoints");
+                                highlightContainer.innerHTML = "";
+                                data.highlights.forEach(point => {
+                                    let li = document.createElement("li");
+                                    li.textContent = point;
+                                    highlightContainer.appendChild(li);
+                                });
+    
+                                // Populate Requirements Table
+                                // 
+                                let requirementsContainer = document.getElementById("modalRequirements");
+                            requirementsContainer.innerHTML = "";
+                            data.requirements.forEach(req => {
+                                let shortDesc = req.description.length > 20 ? req.description.slice(0, 20) + "..." : req.description;
+                                let row = `
+                                    <tr>
+                                        <td>${req.requirement_name}</td>
+                                        <td>${req.quantity}</td>
+                                        <td>${req.price}</td>
+                                        <td>${req.amount}</td>
+                                        <td>
+                                            <span class="short-text">${shortDesc}</span>
+                                            <span class="full-text d-none">${req.description}</span>
+                                            ${req.description.length > 20 ? '<button class="btn btn-link toggle-text">Read More</button>' : ''}
+                                        </td>
+                                    </tr>
+                                `;
+                                requirementsContainer.innerHTML += row;
+                            });
+    
+                            // Add event listeners for Read More / Read Less
+                            setTimeout(() => {
+                                document.querySelectorAll(".toggle-text").forEach(button => {
+                                    button.addEventListener("click", function () {
+                                        let shortText = this.previousElementSibling.previousElementSibling;
+                                        let fullText = this.previousElementSibling;
+    
+                                        if (fullText.classList.contains("d-none")) {
+                                            fullText.classList.remove("d-none");
+                                            shortText.classList.add("d-none");
+                                            this.textContent = "Read Less";
+                                        } else {
+                                            fullText.classList.add("d-none");
+                                            shortText.classList.remove("d-none");
+                                            this.textContent = "Read More";
+                                        }
+                                    });
+                                });
+                            }, 100);
+    
+                                let approversContainer = document.getElementById("modalApprovers");
+                                approversContainer.innerHTML = "";
+                                data.approvers.forEach(approver => {
+                                    let li = document.createElement("li");
+                                    li.textContent = `${approver.name} - ${approver.status} : ${approver.comments}`;
+                                    approversContainer.appendChild(li);
+                                });
+    
+                                // Show modal
+                                let modal = new bootstrap.Modal(document.getElementById("requestDetailModal"));
+                                modal.show();
+                            } else {
+                                alert("Error fetching request details!");
+                            }
+                        })
+                        .catch(error => console.error("Error:", error));
+                });
+            });
+        });
+    
+    document.addEventListener("DOMContentLoaded", function () {
+        document.querySelectorAll(".toggle-text").forEach(button => {
+            button.addEventListener("click", function () {
+                let shortText = this.previousElementSibling.previousElementSibling;
+                let fullText = this.previousElementSibling;
+    
+                if (fullText.classList.contains("d-none")) {
+                    fullText.classList.remove("d-none");
+                    shortText.classList.add("d-none");
+                    this.textContent = "Read Less";
+                } else {
+                    fullText.classList.add("d-none");
+                    shortText.classList.remove("d-none");
+                    this.textContent = "Read More";
+                }
+            });
+        });
+    });
+<!-- <script>
+    document.addEventListener("DOMContentLoaded", function () {
+        document.querySelectorAll(".doc-link").forEach(link => {
+            link.addEventListener("click", function (event) {
+                event.preventDefault();
+                let docId = this.getAttribute("data-doc-id");
+
+                // Fetch request details via AJAX
+                fetch(`/get_request_details_all/${docId}/`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            document.getElementById("modalDocId").textContent = data.doc_number;
+                            document.getElementById("modalDescription").textContent = data.description;
+                            document.getElementById("modalCreatedBy").textContent = data.created_by;
+                            document.getElementById("modalCreatedAt").textContent = data.created_at;
+
+                            // Populate Highlight Points
+                            let highlightContainer = document.getElementById("modalHighlightPoints");
+                            highlightContainer.innerHTML = "";
+                            data.highlights.forEach(point => {
+                                let li = document.createElement("li");
+                                li.textContent = point;
+                                highlightContainer.appendChild(li);
+                            });
+
+                            // Populate Requirements Table
+                            // 
+                            let requirementsContainer = document.getElementById("modalRequirements");
+                        requirementsContainer.innerHTML = "";
+                        data.requirements.forEach(req => {
+                            let shortDesc = req.description.length > 20 ? req.description.slice(0, 20) + "..." : req.description;
+                            let row = `
+                                <tr>
+                                    <td>${req.requirement_name}</td>
+                                    <td>${req.quantity}</td>
+                                    <td>${req.price}</td>
+                                    <td>${req.amount}</td>
+                                    <td>
+                                        <span class="short-text">${shortDesc}</span>
+                                        <span class="full-text d-none">${req.description}</span>
+                                        ${req.description.length > 20 ? '<button class="btn btn-link toggle-text">Read More</button>' : ''}
+                                    </td>
+                                </tr>
+                            `;
+                            requirementsContainer.innerHTML += row;
+                        });
+
+                        // Add event listeners for Read More / Read Less
+                        setTimeout(() => {
+                            document.querySelectorAll(".toggle-text").forEach(button => {
+                                button.addEventListener("click", function () {
+                                    let shortText = this.previousElementSibling.previousElementSibling;
+                                    let fullText = this.previousElementSibling;
+
+                                    if (fullText.classList.contains("d-none")) {
+                                        fullText.classList.remove("d-none");
+                                        shortText.classList.add("d-none");
+                                        this.textContent = "Read Less";
+                                    } else {
+                                        fullText.classList.add("d-none");
+                                        shortText.classList.remove("d-none");
+                                        this.textContent = "Read More";
+                                    }
+                                });
+                            });
+                        }, 100);
+
+    //                         let approversContainer = document.getElementById("modalApprovers");
+    //                         approversContainer.innerHTML = "";
+    //                         data.approvers.forEach(approver => {
+    //                             let li = document.createElement("li");
+    //                             li.textContent = `${approver.name} - ${approver.status} : ${approver.comments}`;
+    //                             approversContainer.appendChild(li);
+    //                         });
+
+    //                         // Show modal
+    //                         let modal = new bootstrap.Modal(document.getElementById("requestDetailModal"));
+    //                         modal.show();
+    //                     } else {
+    //                         alert("Error fetching request details!");
+    //                     }
+    //                 })
+    //                 .catch(error => console.error("Error:", error));
+    //         });
+    //     });
+    // });
+
+    let approversContainer = document.getElementById("modalApprovers");
+                        approversContainer.innerHTML = "";
+                        data.approvers.forEach(approver => {
+                            let li = document.createElement("li");
+                            li.innerHTML = `<strong>${approver.name}</strong> - ${approver.status} <br> 
+                                            <small>Updated At: ${approver.updated_at}</small> <br>
+                                            <span class="short-text">${approver.comments.length > 20 ? approver.comments.slice(0, 20) + "..." : approver.comments}</span>
+                                            <span class="full-text d-none">${approver.comments}</span>
+                                            ${approver.comments.length > 20 ? '<button class="btn btn-link toggle-text">Read More</button>' : ''}
+                                           `;
+                            approversContainer.appendChild(li);
+                        });
+
+                        // Add event listeners for Read More / Read Less
+                        setTimeout(() => {
+                            document.querySelectorAll(".toggle-text").forEach(button => {
+                                button.addEventListener("click", function () {
+                                    let shortText = this.previousElementSibling.previousElementSibling;
+                                    let fullText = this.previousElementSibling;
+
+                                    if (fullText.classList.contains("d-none")) {
+                                        fullText.classList.remove("d-none");
+                                        shortText.classList.add("d-none");
+                                        this.textContent = "Read Less";
+                                    } else {
+                                        fullText.classList.add("d-none");
+                                        shortText.classList.remove("d-none");
+                                        this.textContent = "Read More";
+                                    }
+                                });
+                            });
+                        }, 100);
+
+                        let modal = new bootstrap.Modal(document.getElementById("requestDetailModal"));
+                        modal.show();
+                    } else {
+                        alert("Error fetching request details!");
+                    }
+                })
+                .catch(error => console.error("Error:", error));
+        });
+    });
+});
+
+document.addEventListener("DOMContentLoaded", function () {
+    document.querySelectorAll(".toggle-text").forEach(button => {
+        button.addEventListener("click", function () {
+            let shortText = this.previousElementSibling.previousElementSibling;
+            let fullText = this.previousElementSibling;
+
+            if (fullText.classList.contains("d-none")) {
+                fullText.classList.remove("d-none");
+                shortText.classList.add("d-none");
+                this.textContent = "Read Less";
+            } else {
+                fullText.classList.add("d-none");
+                shortText.classList.remove("d-none");
+                this.textContent = "Read More";
+            }
+        });
+    });
+});
+document.addEventListener("DOMContentLoaded", function () {
+    document.querySelectorAll(".download-pdf").forEach(button => {
+        button.addEventListener("click", function () {
+            let docId = this.getAttribute("data-doc-id");
+            console.log("PDF Download Clicked - Document ID:", docId);
+
+            if (!docId) {
+                alert("Error: Document ID is missing!");
+                return;
+            }
+            
+            window.open(`/generate_approval_pdf/${docId}/`, "_blank");
+        });
+    });
+});
+
+</script> -->
+
+document.addEventListener("DOMContentLoaded", function () {
+    document.querySelectorAll(".approve-btn, .reject-btn").forEach(button => {
+        button.addEventListener("click", function () {
+            let action = this.classList.contains("approve-btn") ? "approve" : "reject";
+            let approvalId = document.getElementById("modal-approval-id").value;
+            let comments = document.getElementById("approval-comments").value;
+
+            fetch("/submit_approval/", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    "X-CSRFToken": getCookie("csrftoken")
+                },
+                body: `approval_id=${approvalId}&action=${action}&comments=${encodeURIComponent(comments)}`
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                console.log("✅ Approval Submitted!");
+                alert(data.message);
+                window.location.href = "/approval_list/";  // ✅ Redirect to Approval List Page
+            } else {
+                alert("❌ Error: " + data.error);
+            }
+            })
+            .catch(error => console.error("Error submitting approval:", error));
+        });
+    });
+});
+
+
+
+
+
+//asddff
+
+<script>
+    function formatLocalTime(isoString) {
+    let date = new Date(isoString);
+    return date.toLocaleString('en-US', { timeZone: 'Asia/Kolkata' });  // ✅ Adjust timezone
+}
+    document.addEventListener("DOMContentLoaded", function () {
+    document.querySelectorAll(".doc-link").forEach(link => {
+        link.addEventListener("click", function (event) {
+    
+            event.preventDefault();
+            let docId = this.getAttribute("data-doc-id");
+
+            // Fetch request details via AJAX
+            fetch(`/get_request_details_all/${docId}/`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        document.getElementById("modalDocId").textContent = data.doc_number;
+                        document.getElementById("modalDescription").textContent = data.description;
+                        document.getElementById("modalCreatedBy").textContent = data.created_by;
+                        document.getElementById("modalCreatedAt").textContent = data.created_at;
+
+                        // ✅ Populate Highlight Points
+                        let highlightContainer = document.getElementById("modalHighlightPoints");
+                        highlightContainer.innerHTML = "";
+                        data.highlights.forEach(point => {
+                            let li = document.createElement("li");
+                            li.textContent = point;
+                            highlightContainer.appendChild(li);
+                        });
+
+                        // ✅ Populate Requirements Table
+                        let requirementsContainer = document.getElementById("modalRequirements");
+                        requirementsContainer.innerHTML = "";
+                        data.requirements.forEach(req => {
+                            let shortDesc = req.description.length > 20 ? req.description.slice(0, 20) + "..." : req.description;
+                            let row = `
+                                <tr>
+                                    <td>${req.requirement_name}</td>
+                                    <td>${req.quantity}</td>
+                                    <td>${req.price}</td>
+                                    <td>${req.amount}</td>
+                                    <td>
+                                        <span class="short-text">${shortDesc}</span>
+                                        <span class="full-text d-none">${req.description}</span>
+                                        ${req.description.length > 20 ? '<button class="btn btn-link toggle-text">Read More</button>' : ''}
+                                    </td>
+                                </tr>
+                            `;
+                            requirementsContainer.innerHTML += row;
+                        });
+
+                        // ✅ Initialize DataTable with Search & Pagination
+                        setTimeout(() => {
+                            $("#modalRequirementsTable").DataTable({
+                                "paging": true,       // Enable pagination
+                                "searching": true,    // Enable search
+                                "lengthChange": false, // Hide "Show Entries"
+                                "info": false,         // Hide "Showing X of Y entries"
+                                "pageLength": 5        // Show 5 items per page
+                            });
+                        }, 300);
+
+                        // ✅ Populate Approvers with Comments
+                        let approversContainer = document.getElementById("modalApprovers");
+                        approversContainer.innerHTML = "";
+                        data.approvers.forEach(approver => {
+                            let shortComment = approver.comments.length > 20 ? approver.comments.slice(0, 20) + "..." : approver.comments;
+                            let li = document.createElement("li");
+                            li.innerHTML = `
+                                <strong>${approver.name}</strong> - ${approver.status} <br> 
+                                <small>Updated At: ${approver.updated_at}</small> <br>
+                                <span class="short-text">${shortComment}</span>
+                                <span class="full-text d-none">${approver.comments}</span>
+                                ${approver.comments.length > 20 ? '<button class="btn btn-link toggle-text">Read More</button>' : ''}
+                            `;
+                            approversContainer.appendChild(li);
+                        });
+
+                        // ✅ Attach Event Listeners for Read More / Read Less
+                        setTimeout(() => {
+                            document.querySelectorAll(".toggle-text").forEach(button => {
+                                button.addEventListener("click", function () {
+                                    let shortText = this.previousElementSibling.previousElementSibling;
+                                    let fullText = this.previousElementSibling;
+
+                                    if (fullText.classList.contains("d-none")) {
+                                        fullText.classList.remove("d-none");
+                                        shortText.classList.add("d-none");
+                                        this.textContent = "Read Less";
+                                    } else {
+                                        fullText.classList.add("d-none");
+                                        shortText.classList.remove("d-none");
+                                        this.textContent = "Read More";
+                                    }
+                                });
+                            });
+                        }, 200); // Give time for DOM update before attaching event listeners
+
+                        // ✅ Show the attached document (if available)
+                        let docLink = document.getElementById("modal-document-link");
+                                            if (data.document_url) {
+                                                docLink.href = data.document_url;
+                                                docLink.textContent = "View Document";
+                                                docLink.classList.remove("d-none");  // ✅ Show the button
+                                            } else {
+                                                docLink.href = "#";
+                                                docLink.textContent = "No Document Attached";
+                                                docLink.classList.add("d-none");  // ✅ Hide the button if no document
+                                            }
+                        // ✅ Show Modal
+                        let modal = new bootstrap.Modal(document.getElementById("requestDetailModal"));
+                        modal.show();
+                    } else {
+                        alert("Error fetching request details!");
+                    }
+                })
+                .catch(error => console.error("Error:", error));
+        });
+    });
+    
+    document.getElementById("download-pdf").addEventListener("click", function () {
+    let historyType = window.location.pathname.includes("request_history") ? "request" : "approval";
+    window.open(`/download_history/pdf/${historyType}/`, "_blank");
+});
+
+document.getElementById("download-excel").addEventListener("click", function () {
+    let historyType = window.location.pathname.includes("request_history") ? "request" : "approval";
+    window.open(`/download_history/excel/${historyType}/`, "_blank");
+});
+
+    // ✅ PDF Download Button
+    document.querySelectorAll(".download-pdf").forEach(button => {
+        button.addEventListener("click", function () {
+            let docId = this.getAttribute("data-doc-id");
+            console.log("PDF Download Clicked - Document ID:", docId);
+
+            if (!docId) {
+                alert("Error: Document ID is missing!");
+                return;
+            }
+
+            window.open(`/generate_approval_pdf/${docId}/`, "_blank");
+        });
+    });
+});
+
+document.getElementById("requestDetailModal").addEventListener("hidden.bs.modal", function () {
+        if ($.fn.DataTable.isDataTable("#modalRequirementsTable")) {
+            $('#modalRequirementsTable').DataTable().destroy();
+        }
+    });
+
+</script>
+
+document.addEventListener("DOMContentLoaded", function () {
+
+    // Open query modal
+    document.querySelectorAll(".query-btn").forEach(button => {
+        button.addEventListener("click", function () {
+            let approvalId = this.getAttribute("data-approval-id");
+            let docId = this.getAttribute("data-doc-id");
+            new bootstrap.Modal(document.getElementById("queryModal")).show();
+        });
+    });
+
+    // Submit query
+    document.getElementById("submitQuery").addEventListener("click", function () {
+var queryText = document.getElementById("queryComment").value.trim();
+var approvalId = document.getElementById("query-modal-approval-id")?.value; // Get approval ID
+var docId = document.getElementById("query-modal-doc-id")?.value; // Get document ID
+
+if (!queryText) {
+    Swal.fire("Error", "Query comment cannot be empty!", "error");
+    return;
+}
+if(!docId){
+    Swal.fire("Error", "document ID!", "error");
+    return;
+}
+if (!approvalId) {  // ✅ Ensure IDs are not empty
+    Swal.fire("Error", "Missing approval", "error");
+    return;
+}
+
+var payload = {
+    approval_id: approvalId,
+    doc_id: docId,
+    query_comment: queryText
+};
+
+fetch("/submit_query/", {
+    method: "POST",
+    headers: {
+        "Content-Type": "application/json",
+        "X-CSRFToken": document.querySelector("[name=csrfmiddlewaretoken]").value
+    },
+    body: JSON.stringify(payload)
+})
+.then(response => response.json())
+.then(data => {
+    if (data.success) {
+        Swal.fire("Success", "Query submitted successfully!", "success")
+            .then(() => {
+                location.reload();
+            });
+    } else {
+        Swal.fire("Error", data.error || "Failed to submit query!", "error");
+    }
+})
+.catch(error => {
+    console.error("Error submitting query:", error);
+    Swal.fire("Error", "Failed to submit query!", "error");
+});
+});
+
+
+
+});
+
+
+<div class="modal fade" id="queryModal" tabindex="-1" aria-labelledby="queryModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="queryModalLabel">Submit Query</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p><strong>Document ID:</strong> <span id="query-modal-doc-id"></span></p>
+
+                <input type="hidden" id="query-modal-approval-id" value="{{ approval.id }}">
+                <!-- <input type="hidden" id="query-modal-doc-id" value="{{ approval.request.id }}"> -->
+                <textarea id="queryComment" class="form-control" rows="4" placeholder="Enter your query..."></textarea>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-warning" id="submitQuery">Submit Query</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+document.addEventListener("DOMContentLoaded", function () {
+    // Open Query Modal and set IDs
+    document.querySelectorAll(".query-btn").forEach(button => {
+        button.addEventListener("click", function () {
+            let approvalId = this.getAttribute("data-approval-id");
+            let docId = this.getAttribute("data-doc-id");
+
+            if (!approvalId || !docId) {
+                Swal.fire("Error", "Missing approval or document ID!", "error");
+                return;
+            }
+
+            // Set the hidden inputs in the Query Modal
+            document.getElementById("query-modal-approval-id").value = approvalId;
+            document.getElementById("query-modal-doc-id").value = docId;
+
+            // Show the Query Modal
+            let queryModal = new bootstrap.Modal(document.getElementById("queryModal"));
+            queryModal.show();
+        });
+    });
+
+    // Submit Query
+    document.getElementById("submitQuery").addEventListener("click", function () {
+        var queryText = document.getElementById("queryComment").value.trim();
+        var approvalId = document.getElementById("query-modal-approval-id").value;
+        var docId = document.getElementById("query-modal-doc-id").value;
+
+        if (!queryText) {
+            Swal.fire("Error", "Query comment cannot be empty!", "error");
+            return;
+        }
+        if (!approvalId || !docId) {
+            Swal.fire("Error", "Missing approval or document ID!", "error");
+            return;
+        }
+
+        var payload = {
+            approval_id: approvalId,
+            doc_id: docId,
+            query_comment: queryText
+        };
+
+        fetch("/submit_query/", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-CSRFToken": document.querySelector("[name=csrfmiddlewaretoken]").value
+            },
+            body: JSON.stringify(payload)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                Swal.fire("Success", "Query submitted successfully!", "success")
+                    .then(() => location.reload());
+            } else {
+                Swal.fire("Error", data.error || "Failed to submit query!", "error");
+            }
+        })
+        .catch(error => {
+            console.error("Error submitting query:", error);
+            Swal.fire("Error", "Failed to submit query!", "error");
+        });
+    });
+});
+
+// document.addEventListener("DOMContentLoaded", function () {
+    //     document.getElementById("add-approver").addEventListener("click", function () {
+    //         let container = document.getElementById("approvers-container");
+    //         let approverFields = container.getElementsByClassName("approver-field");
+    //         let newIndex = approverFields.length + 1;
+    
+    //         let newInput = document.createElement("div");
+    //         newInput.classList.add("input-group", "mb-2", "approver-field");
+    
+    //         newInput.innerHTML = `
+    //             <span class="input-group-text approver-number">Approver ${newIndex}:</span>
+    //             <select class="form-control approver-select" name="approvers[]" onchange="updateApproverOptions()">
+    //                 <option value="">Select Approver</option>
+    //                 {% for user in users %}
+    //                     <option value="{{ user.id }}">{{ user.username }}</option>
+    //                 {% endfor %}
+    //             </select>
+    //             <button type="button" class="btn btn-danger remove-approver">Delete</button>
+    //         `;
+    
+    //         container.appendChild(newInput);
+    //         updateApproverNumbers();
+    //         updateApproverOptions();
+    //     });
+    
+    //     // Event delegation for deleting approvers
+    //     document.addEventListener("click", function (event) {
+    //         if (event.target.classList.contains("remove-approver")) {
+    //             event.target.closest(".approver-field").remove();
+    //             updateApproverNumbers();
+    //             updateApproverOptions();
+    //         }
+    //     });
+    
+    //     function updateApproverNumbers() {
+    //         let approverNumbers = document.querySelectorAll(".approver-number");
+    //         approverNumbers.forEach((label, index) => {
+    //             label.textContent = `Approver ${index + 1}:`;
+    //         });
+    //     }
+    
+    //     window.updateApproverOptions = function () {
+    //         let selectedValues = new Set();
+    //         let selects = document.querySelectorAll(".approver-select");
+    
+    //         // Collect selected values
+    //         selects.forEach(select => {
+    //             if (select.value) {
+    //                 selectedValues.add(select.value);
+    //             }
+    //         });
+    
+    //         // Disable selected values in other dropdowns
+    //         selects.forEach(select => {
+    //             let options = select.querySelectorAll("option");
+    //             options.forEach(option => {
+    //                 if (option.value !== "" && selectedValues.has(option.value)) {
+    //                     if (option.value === select.value) {
+    //                         option.disabled = false; // Keep the selected one enabled
+    //                     } else {
+    //                         option.disabled = true;
+    //                     }
+    //                 } else {
+    //                     option.disabled = false;
+    //                 }
+    //             });
+    //         });
+    //     };
+    // });
+
+    // document.addEventListener("DOMContentLoaded", function () {
+        //     document.getElementById("add-approver").addEventListener("click", function () {
+        //         let container = document.getElementById("approvers-container");
+        //         let approverFields = container.getElementsByClassName("approver-field");
+        //         let newIndex = approverFields.length + 1;
+        
+        //         let newInput = document.createElement("div");
+        //         newInput.classList.add("input-group", "mb-2", "approver-field");
+        
+        //         newInput.innerHTML = `
+        //             <span class="input-group-text approver-number">Approver ${newIndex}:</span>
+        //             <select class="form-control approver-select" name="approvers[]" onchange="updateApproverOptions()">
+        //                 <option value="">Select Approver</option>
+        //                 {% for user in users %}
+        //                     <option value="{{ user.id }}">{{ user.username }}</option>
+        //                 {% endfor %}
+        //             </select>
+        //             <button type="button" class="btn btn-danger remove-approver">Delete</button>
+        //         `;
+        
+        //         container.appendChild(newInput);
+        //         updateApproverNumbers();
+        //         updateApproverOptions();
+        //     });
+        
+        //     // Event delegation for deleting approvers
+        //     document.addEventListener("click", function (event) {
+        //         if (event.target.classList.contains("remove-approver")) {
+        //             event.target.closest(".approver-field").remove();
+        //             updateApproverNumbers();
+        //         }
+        //     });
+        
+        //     function updateApproverNumbers() {
+        //         let approverNumbers = document.querySelectorAll(".approver-number");
+        //         approverNumbers.forEach((label, index) => {
+        //             label.textContent = `Approver ${index + 1}:`;
+        //         });
+        //     }
+        
+        
+        
+        
+        
+        
+            // function updateApproverOptions() {
+            //     let selectedValues = Array.from(document.querySelectorAll(".approver-select"))
+            //         .map(select => select.value)
+            //         .filter(value => value !== ""); // Get only selected values
+        
+            //     document.querySelectorAll(".approver-select").forEach(select => {
+            //         Array.from(select.options).forEach(option => {
+            //             if (option.value && selectedValues.includes(option.value) && select.value !== option.value) {
+            //                 option.disabled = true;
+            //             } else {
+            //                 option.disabled = false;
+            //             }
+            //         });
+            //     });
+            // }
+        
+        // });
+
+        // document.addEventListener("DOMContentLoaded", function () {
+            //     // Open Query Modal
+            //     document.querySelectorAll(".query-btn").forEach(button => {
+            //         button.addEventListener("click", function () {
+            //             let approvalId = this.getAttribute("data-approval-id");
+            //             document.getElementById("modal-approval-id").value = approvalId;  // Store approval ID
+            //             new bootstrap.Modal(document.getElementById("queryModal")).show();
+            //         });
+            //     });
+            
+            //     // Submit Query
+            //     document.getElementById("submitQuery").addEventListener("click", function () {
+            //         let queryText = document.getElementById("queryComment").value.trim();
+            //         let approvalId = document.getElementById("modal-approval-id").value;
+            
+            //         if (!queryText) {
+            //             Swal.fire("Error", "Query comment cannot be empty!", "error");
+            //             return;
+            //         }
+            //         if (!approvalId) {
+            //             Swal.fire("Error", "Missing approval ID!", "error");
+            //             return;
+            //         }
+            
+            //         let payload = {
+            //             approval_id: approvalId,
+            //             query_comment: queryText
+            //         };
+            
+            //         fetch("/submit_query/", {
+            //             method: "POST",
+            //             headers: {
+            //                 "Content-Type": "application/json",
+            //                 "X-CSRFToken": document.querySelector("[name=csrfmiddlewaretoken]").value
+            //             },
+            //             body: JSON.stringify(payload)
+            //         })
+            //         .then(response => response.json())
+            //         .then(data => {
+            //             if (data.success) {
+            //                 Swal.fire("Success", "Query submitted successfully!", "success")
+            //                     .then(() => location.reload());
+            //             } else {
+            //                 Swal.fire("Error", data.error || "Failed to submit query!", "error");
+            //             }
+            //         })
+            //         .catch(error => {
+            //             console.error("Error submitting query:", error);
+            //             Swal.fire("Error", "Failed to submit query!", "error");
+            //         });
+            //     });
+            // });
+            
+            // fetch(`/get_query_details/${approvalId}/`)
+            //     .then(response => response.json())
+            //     .then(data => {
+            //         if (data.success) {
+            //             let changesContainer = document.getElementById("modalRequirementChanges");
+            //             changesContainer.innerHTML = "";
+            //             if (data.requirement_changes && data.requirement_changes.length > 0) {
+            //                 data.requirement_changes.forEach(change => {
+            //                     let row = `
+            //                         <tr>
+            //                             <td>${change.requirement_name}</td>
+            //                             <td>${change.old_quantity} → ${change.new_quantity}</td>
+            //                             <td>${change.old_price} → ${change.new_price}</td>
+            //                             <td>${change.old_amount} → ${change.new_amount}</td>
+            //                             <td>${change.old_description} → ${change.new_description}</td>
+            //                         </tr>
+            //                     `;
+            //                     changesContainer.innerHTML += row;
+            //                 });
+            //             } else {
+            //                 changesContainer.innerHTML = '<tr><td colspan="5" class="text-center">No changes</td></tr>';
+            //             }
+            
+            //             new bootstrap.Modal(document.getElementById("queryEditModal")).show();
+            //         } else {
+            //             Swal.fire("Error", "Failed to fetch request details!", "error");
+            //         }
+            //     })
+            //     .catch(error => console.error("Error fetching request details:", error));
+    
+// document.addEventListener("DOMContentLoaded", function () {
+    //     document.querySelectorAll(".query-btn").forEach(button => {
+    //         let hasQuery = button.getAttribute("data-has-query");
+    //         if (hasQuery === "1" || hasQuery === "2") {
+    //             button.disabled = true;  // ✅ Disable the button if a query exists
+    //         }
+    
+    //         button.addEventListener("click", function () {
+    //             let approvalId = this.getAttribute("data-approval-id");
+    
+    //             if (!approvalId) {
+    //                 Swal.fire("Error", "Missing approval ID!", "error");
+    //                 return;
+    //             }
+    
+    //             document.getElementById("modal-query-approval-id").value = approvalId;
+    //             new bootstrap.Modal(document.getElementById("queryModal")).show();
+    //         });
+    //     });
+    // });
+
+    req history
+    <div style="position: absolute; top: 135px; left: 655px; width: 220px; height: 50px; background-color: #ffffff;"></div>
+approval list
+<div style="position: absolute; top: 60px; left: 640px; width: 220px; height: 50px; background-color: #ffffff;"></div>
+approval details
+<div style="position: absolute; top: 145px; left: 640px; width: 220px; height: 50px; background-color: #ffffff;"></div>
+
+<!-- <script>
+    document.addEventListener("DOMContentLoaded", function () {
+        document.querySelectorAll(".doc-link").forEach(link => {
+            link.addEventListener("click", function (event) {
+                event.preventDefault();
+                let docId = this.getAttribute("data-doc-id");
+    
+                fetch(`/get_request_details/${docId}/`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            document.getElementById("modalDocId").textContent = data.doc_number;
+                            document.getElementById("modalDescription").textContent = data.description;
+                            document.getElementById("modalCreatedBy").textContent = data.created_by;
+                            document.getElementById("modalCreatedAt").textContent = data.created_at;
+    
+                            let requirementsContainer = document.getElementById("modalRequirements");
+                            requirementsContainer.innerHTML = "";
+                            data.requirements.forEach(req => {
+                                let shortDesc = req.description.length > 20 ? req.description.slice(0, 20) + "..." : req.description;
+                                let row = `
+                                    <tr>
+                                        <td>${req.requirement_name}</td>
+                                        <td>${req.quantity}</td>
+                                        <td>${req.price}</td>
+                                        <td>${req.amount}</td>
+                                        <td>
+                                            <span class="short-text">${shortDesc}</span>
+                                            <span class="full-text d-none">${req.description}</span>
+                                            ${req.description.length > 20 ? '<button class="btn btn-link toggle-text">Read More</button>' : ''}
+                                        </td>
+                                    </tr>
+                                `;
+                                requirementsContainer.innerHTML += row;
+                            });
+    
+                            // ✅ Attach event listeners immediately after the DOM update
+                            document.querySelectorAll(".toggle-text").forEach(button => {
+                                button.addEventListener("click", function () {
+                                    let shortText = this.previousElementSibling.previousElementSibling;
+                                    let fullText = this.previousElementSibling;
+    
+                                    if (fullText.classList.contains("d-none")) {
+                                        fullText.classList.remove("d-none");
+                                        shortText.classList.add("d-none");
+                                        this.textContent = "Read Less";
+                                    } else {
+                                        fullText.classList.add("d-none");
+                                        shortText.classList.remove("d-none");
+                                        this.textContent = "Read More";
+                                    }
+                                });
+                            });
+    
+                            let modal = new bootstrap.Modal(document.getElementById("requestDetailModal"));
+                            modal.show();
+                        } else {
+                            alert("Error fetching request details!");
+                        }
+                    })
+                    .catch(error => console.error("Error:", error));
+            });
+        });
+    });
+    </script> -->
+<!-- Bootstrap CSS -->
+<!-- <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-table@1.21.3/dist/bootstrap-table.min.css">
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+<script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap-table@1.21.3/dist/bootstrap-table.min.js"></script> -->

@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Approval Needed</title>
+</head>
+<body style="font-family: Arial, sans-serif; padding: 20px;">
+    
+    
+    <p>Dear {{ approver_name }},</p>
+
+    <p>The previous approver, <strong>{{ previous_approver }}</strong>, has approved a request.</p>
+
+    <p><strong>Document ID:</strong> {{ doc_number }}</p>
+
+    <p>{{ email_body }}</p>
+
+    <p>Please review and take action</p>
+    <!-- <p>
+        <a href="{{ approval_link }}" style="display: inline-block; padding: 10px 20px; background-color: #28a745; color: #fff; text-decoration: none; border-radius: 5px;">
+            Approve or Reject
+        </a>
+    </p> -->
+
+    <p>Thank you for your prompt response.</p>
+
+    <p>With regards,<br>Accsys Consulting</p>
+
+    <div style="text-align: center;">
+        <img src="{{ company_logo }}" alt="Company Logo" style="width: 200px; margin-bottom: 20px;">
+    </div>
+</body>
+</html>

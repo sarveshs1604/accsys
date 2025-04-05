@@ -1,0 +1,695 @@
+{% extends 'main.html' %}
+{% block content %}
+
+
+<main id="main" class="main">
+    <!-- <div class="pagetitle">
+        <h1>Approval</h1>
+    </div> -->
+    <div class="pagetitle">
+        <h1 >Approval</h1>
+        <nav>
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="#">Dashboard</a></li>
+                <li class="breadcrumb-item">Approval</li>
+            </ol>
+        </nav>
+    </div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
+
+    <section class="section profile">
+        <div class="card">
+            <div class="card-body pt-3">
+                <div class="d-flex justify-content-end mb-3">
+                    <button id="download-pdf" class="btn btn-danger me-2">
+                        <i class="fas fa-file-pdf"></i> Download PDF
+                    </button>
+                    <button id="download-excel" class="btn btn-success">
+                        <i class="fas fa-file-excel"></i> Download Excel
+                    </button>
+                </div>
+                <ul class="nav nav-tabs nav-tabs-bordered">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'document' %}">Request Form</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'approval_list' %}">Pending Approvals</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'approval_details' %}">Approval History</a>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#request-form">Request History</button>
+                    </li>
+                </ul>
+                <br>
+                <div style="position: absolute; top: 135px; left: 655px; width: 220px; height: 50px; background-color: #ffffff;"></div>
+
+                
+                
+                <table class="table datatable">
+                    <thead>
+                        <tr>
+                            <th>Document ID</th>
+                            <th>Status</th>
+                            <th>Created At</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for request in requests %}
+                        <tr>
+                            <td>
+                                <!-- Clickable Doc ID -->
+                                <!-- <a href="#" class="doc-link" data-doc-id="{{ request.id }}">{{ request.doc_number }}</a> -->
+                                <a href="#" class="doc-link"
+                                data-doc-id="{{ request.id }}"
+                                {% if request.first_approval_id %}
+                                    data-approval-id="{{ request.first_approval_id }}"
+                                {% endif %}>
+                                 {{ request.doc_number }}
+                             </a>
+                            </td>
+                            <td>
+                                {% if request.has_query == 1 %}
+                                    <span class="badge bg-info text-dark">Query Raised</span>
+                                {% elif request.has_query == 2 %}
+                                    <span class="badge bg-warning text-dark">{{ request.overall_status }}</span>
+                                {% elif "Pending" in request.overall_status %}
+                                    <span class="badge bg-warning text-dark">{{ request.overall_status }}</span>
+                                {% elif request.overall_status == "Approved" %}
+                                    <span class="badge bg-success">{{ request.overall_status }}</span>
+                                {% else %}
+                                    <span class="badge bg-danger">{{ request.overall_status }}</span>
+                                {% endif %}
+                            </td>
+                            
+                            <td>{{ request.created_at|date:"Y-m-d H:i:s" }}</td>
+                            <td>
+                                {% if request.overall_status == "Approved" %}
+                                    <button class="btn btn-primary btn-sm download-pdf" data-doc-id="{{ request.id }}">
+                                        Download PDF
+                                    </button>
+                                {% endif %}
+                                {% if request.has_query == 1 %}
+                                    <button class="btn btn-secondary btn-sm view-query-btn" data-approval-id="{{ request.first_approval_id }}">
+                                        View Query
+                                    </button>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="4" class="text-center">No requests found</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                <div class="modal fade" id="requestDetailModal" tabindex="-1" aria-labelledby="requestDetailModalLabel" aria-hidden="true">
+                    <div class="modal-dialog modal-lg modal-dialog-centered">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">Request Details</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                <p><strong>Document ID:</strong> <span id="modalDocId"></span></p>
+                                <p><strong>Created By:</strong> <span id="modalCreatedBy"></span></p>
+                                <p><strong>Description:</strong> <span id="modalDescription"></span></p>
+                                <p><strong>Created At:</strong> <span id="modalCreatedAt"></span></p>
+                                
+                                <!-- Highlight Points -->
+                                <h6>Highlight Points</h6>
+                                <ul id="modalHighlightPoints"></ul>
+
+                                <h6>Attached Document</h6>
+                                <p>
+                                    <a id="modal-document-link" href="#" target="_blank" class="btn btn-outline-primary d-none">
+                                        View Document
+                                    </a>
+                                </p>
+
+                                <div id="queryDocumentsSection" class="d-none">
+                                    <h6>Query Documents</h6>
+                                    <div id="query-doc-buttons" class="d-flex flex-wrap gap-2"></div>
+                                </div>
+                                <!-- <div id="queryDocumentsSection" class="d-none">
+                                    <h6>Query Documents</h6>
+                                    <ul id="modal-query-documents" class="list-group"></ul>
+                                </div> -->
+                                
+
+                                <!-- Requirements Table -->
+                                <h6>Requirements</h6>
+                                <div class="p-3 border rounded shadow-sm" style="background-color: #f8f9fa;">
+                                <div class="d-flex justify-content-end mb-2">
+                                        <div class="input-group" style="width: 250px;">
+                                            <input type="text" id="requirementSearch" class="form-control" placeholder="Search requirements...">
+                                            <span class="input-group-text"><i class="bi bi-search"></i></span>
+                                        </div>
+                                </div>
+                                <!-- <input type="text" id="requirementSearch" class="form-control mb-2" placeholder="Search Requirement..."> -->
+                                <div style="max-height: 300px;overflow-y: auto;">
+                                <table class="table table-bordered" id="modelRequirementsTable">
+                                    <thead>
+                                        <tr>
+                                            <th>Requirement</th>
+                                            <th>Quantity</th>
+                                            <th>Price</th>
+                                            <th>Amount</th>
+                                            <th>Description</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="modalRequirements">
+                                        {% for req in requirements %}
+                                        <tr>
+                                            <td>
+                                                <input type="hidden" name="requirement_id[]" value="{{ req.id }}">  <!-- ✅ Add hidden field -->
+                                                <input type="text" class="form-control" name="requirement[]" value="{{ req.requirement_name }}" required>
+                                            </td>
+                                            <td><input type="number" class="form-control quantity" name="quantity[]" value="{{ req.quantity }}" required></td>
+                                            <td><input type="number" step="0.01" class="form-control price" name="price[]" value="{{ req.price }}" required></td>
+                                            <td><input type="text" class="form-control amount" value="{{ req.amount }}" readonly></td>
+                                            <td><input type="text" class="form-control description" name="req_description[]" value="{{ req.description }}" required></td>
+                                        </tr>
+                                        {% endfor %}
+
+                                    </tbody>
+                                </table>
+                                </div>
+                                </div>
+                                <!-- Approvers Section -->
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <h6><strong>Approvers</strong></h6>
+                                        <ul id="modalApprovers"></ul>
+                                    </div>
+                                </div>
+                                
+
+                                
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal fade" id="queryEditModal" tabindex="-1" aria-labelledby="queryEditModalLabel" aria-hidden="true">
+                    <div class="modal-dialog modal-lg modal-dialog-centered">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="queryEditModalLabel">Query Reply</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                            <form id="editRequestForm" method="POST" enctype="multipart/form-data">
+                                {% csrf_token %}
+                                <!-- ✅ Hidden fields to store IDs -->
+                                <input type="hidden" id="modal-query-approval-id">
+                                <!-- <label for="modal-query-comment" class="form-label">Query Comment</label> -->
+                                 <br>
+                                <p><strong>Query</strong></p>
+                                <textarea id="modal-query-comment" class="form-control" rows="3" readonly></textarea>
+
+                                <!-- ✅ Editable Requirement Table -->
+                                <h6>Requirement Table</h6>
+                                <p><strong>&emsp;&emsp;requirement&emsp;&emsp;&emsp;
+                                    Quantity&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;
+                                    Price&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;Amount&emsp;&emsp;&emsp;&emsp;&emsp;Description</strong></p>
+                                <table class="table" id="edit-requirements">
+                                    <thead>
+                                        <tr>
+                                            <th>Requirement</th>
+                                            <th>Quantity</th>
+                                            <th>Price</th>
+                                            <th>Amount</th>
+                                            <th>Description</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <!-- Rows will be populated by JS -->
+                                    </tbody>
+                                </table>
+                                <!-- <div class="mb-3">
+                                    <label for="edit-document" class="form-label">Upload Revised Document</label>
+                                    <input type="file" id="edit-document" class="form-control" name="document" multiple>
+                                </div> -->
+                                <!-- new -->
+                                <h6 class="mt-3">Attach Query Documents</h6>
+                                <div id="queryDocumentsContainer">
+                                    <input type="file" name="query_documents" class="form-control query-document-input">
+                                </div>
+                                <button type="button" id="addQueryDocument" class="btn btn-primary btn-sm mt-2">Add Document</button>
+
+                                <div>
+                                    <label for="queryReply" class="form-label">Your Reply</label>
+                                    <textarea id="queryReply" class="form-control" rows="3" placeholder="Enter your reply to the query..."></textarea>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                <button type="button" class="btn btn-warning" id="submitEditedRequest">Submit Query</button>
+                            </div>
+                        </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+</main>
+
+
+
+
+
+<script>
+    function formatLocalTime(isoString) {
+    let date = new Date(isoString);
+    return date.toLocaleString('en-US', { timeZone: 'Asia/Kolkata' });  // ✅ Adjust timezone
+}   
+    document.addEventListener("DOMContentLoaded", function () {
+    document.querySelectorAll(".doc-link").forEach(link => {
+        link.addEventListener("click", function (event) {
+            event.preventDefault();
+            let docId = this.getAttribute("data-doc-id");
+
+            // Fetch request details via AJAX
+            fetch(`/get_request_details_all/${docId}/`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        document.getElementById("modalDocId").textContent = data.doc_number;
+                        document.getElementById("modalDescription").textContent = data.description;
+                        document.getElementById("modalCreatedBy").textContent = data.created_by;
+                        document.getElementById("modalCreatedAt").textContent = data.created_at;
+                        // ✅ Populate Highlight Points
+                        let highlightContainer = document.getElementById("modalHighlightPoints");
+                        highlightContainer.innerHTML = "";
+                        data.highlights.forEach(point => {
+                            let li = document.createElement("li");
+                            li.textContent = point;
+                            highlightContainer.appendChild(li);
+                        });
+                        // ✅ Populate Requirements Table
+                        let requirementsContainer = document.getElementById("modalRequirements");
+                        requirementsContainer.innerHTML = "";
+                        data.requirements.forEach(req => {
+                            let shortDesc = req.description.length > 20 ? req.description.slice(0, 20) + "..." : req.description;
+                            let row = `<tr data-requirement-id="${req.id}">
+                                    <td>${req.requirement_name}</td>
+                                    <td>${req.quantity}</td>
+                                    <td>${req.price}</td>
+                                    <td>${req.amount}</td>
+                                    <td>
+                                        <span class="short-text">${shortDesc}</span>
+                                        <span class="full-text d-none">${req.description}</span>
+                                        ${req.description.length > 20 ? '<button class="btn btn-link toggle-text">Read More</button>' : ''}
+                                    </td>
+                                </tr>
+                            `;
+                            requirementsContainer.innerHTML += row;
+                        });
+                        // ✅ Populate Approvers with Comments
+                        let approversContainer = document.getElementById("modalApprovers");
+                        approversContainer.innerHTML = "";
+                        data.approvers.forEach(approver => {
+                            let shortComment = approver.comments.length > 20 ? approver.comments.slice(0, 20) + "..." : approver.comments;
+                            let li = document.createElement("li");
+                            li.innerHTML = `
+                                <strong>${approver.name}</strong> - ${approver.status} <br> 
+                                <small>Updated At: ${approver.updated_at}</small> <br>
+                                <span class="short-text">${shortComment}</span>
+                                <span class="full-text d-none">${approver.comments}</span>
+                                ${approver.comments.length > 20 ? '<button class="btn btn-link toggle-text">Read More</button>' : ''}
+                            `;
+                            approversContainer.appendChild(li);
+                        });
+
+                        // ✅ Attach Event Listeners for Read More / Read Less
+                        setTimeout(() => {
+                            document.querySelectorAll(".toggle-text").forEach(button => {
+                                button.addEventListener("click", function () {
+                                    let shortText = this.previousElementSibling.previousElementSibling;
+                                    let fullText = this.previousElementSibling;
+
+                                    if (fullText.classList.contains("d-none")) {
+                                        fullText.classList.remove("d-none");
+                                        shortText.classList.add("d-none");
+                                        this.textContent = "Read Less";
+                                    } else {
+                                        fullText.classList.add("d-none");
+                                        shortText.classList.remove("d-none");
+                                        this.textContent = "Read More";
+                                    }
+                                });
+                            });
+                        }, 200); // Give time for DOM update before attaching event listeners
+
+                        // ✅ Show the attached document (if available)
+                        let docLink = document.getElementById("modal-document-link");
+                                            if (data.document_url) {
+                                                docLink.href = data.document_url;
+                                                docLink.textContent = "View Document";
+                                                docLink.classList.remove("d-none");  // ✅ Show the button
+                                            } else {
+                                                docLink.href = "#";
+                                                docLink.textContent = "No Document Attached";
+                                                docLink.classList.add("d-none");  // ✅ Hide the button if no document
+                                            }
+                        let queryDocumentsContainer = document.getElementById("query-doc-buttons");
+                        queryDocumentsContainer.innerHTML = "";
+
+                        if (data.query_documents.length > 0) {
+                            // document.getElementById("queryDocumentsSection").classList.remove("d-none");
+                            let queryDocSection = document.getElementById("queryDocumentsSection");
+                            if (queryDocSection) {
+                                queryDocSection.classList.remove("d-none");
+                            }  
+
+                            data.query_documents.forEach(doc => {
+                                let div = document.createElement("div");  // Create a div for vertical spacing
+                                div.className = "mb-2";  // Bootstrap class for margin-bottom (adds spacing)
+
+                                let btn = document.createElement("a");
+                                btn.href = doc.url;
+                                btn.target = "_blank";
+                                btn.className = "btn btn-outline-primary d-block";  // 'd-block' makes it full-width
+                                btn.textContent = "View Document";
+
+                                div.appendChild(btn);
+                                queryDocumentsContainer.appendChild(div);
+                            });
+                        } else {
+                            document.getElementById("queryDocumentsSection").classList.add("d-none");
+                        }
+
+                        // let queryDocumentsContainer = document.getElementById("query-doc-buttons");
+                        // queryDocumentsContainer.innerHTML = "";
+                        // if (data.query_documents.length > 0) {
+                        //     document.getElementById("queryDocumentsSection").classList.remove("d-none");
+                        //     data.query_documents.forEach(doc => {
+                        //         let btn = document.createElement("a");
+                        //         btn.href = doc.url;
+                        //         btn.target = "_blank";
+                        //         btn.className = "btn btn-outline-primary";
+                        //         btn.textContent = "View Document"
+                        //         queryDocumentsContainer.appendChild(btn);
+                        //     });
+                        // } else {
+                        //     document.getElementById("queryDocumentsSection").classList.add("d-none");
+                        // }
+                        
+                        // ✅ Show Modal
+                        let modal = new bootstrap.Modal(document.getElementById("requestDetailModal"));
+                        modal.show();
+                    } else {
+                        alert("Error fetching request details!");
+                    }
+                })
+                .catch(error => console.error("Error:", error));
+        });
+    });
+    
+    document.getElementById("download-pdf").addEventListener("click", function () {
+    let historyType = window.location.pathname.includes("request_history") ? "request" : "approval";
+    window.open(`/download_history/pdf/${historyType}/`, "_blank");
+});
+
+document.getElementById("download-excel").addEventListener("click", function () {
+    let historyType = window.location.pathname.includes("request_history") ? "request" : "approval";
+    window.open(`/download_history/excel/${historyType}/`, "_blank");
+});
+
+    // ✅ PDF Download Button
+    document.querySelectorAll(".download-pdf").forEach(button => {
+        button.addEventListener("click", function () {
+            let docId = this.getAttribute("data-doc-id");
+            console.log("PDF Download Clicked - Document ID:", docId);
+
+            if (!docId) {
+                alert("Error: Document ID is missing!");
+                return;
+            }
+
+            window.open(`/generate_approval_pdf/${docId}/`, "_blank");
+        });
+    });
+});
+
+document.addEventListener("DOMContentLoaded", function () {
+    console.log("script")
+    document.querySelectorAll(".view-query-btn").forEach(button => {
+        button.addEventListener("click", function () {
+            console.log("button clicked1")
+            let approvalId = this.getAttribute("data-approval-id");
+
+            if (!approvalId || approvalId === "None") {  
+                Swal.fire("Error", "Missing approval ID!", "error");
+                return;
+            }
+            console.log("button clicked")
+
+            fetch(`/get_query_details/${approvalId}/`)
+                .then(response => response.json())
+                .then(data => {
+                    console.log("Received Data:", data);
+                    if (data.success) {
+                        document.getElementById("modal-query-approval-id").value = approvalId;
+                        console.log("PDF Download Clicked - Document ID:", approvalId);
+                        let queryCommentField = document.getElementById("modal-query-comment");
+                        if (queryCommentField) {
+                            queryCommentField.value = data.query_comment;
+                            queryCommentField.readOnly = true;  // ✅ Make it Read-Only
+                        } else {
+                            console.error("❌ Error: 'modal-query-comment' field not found!");
+                        }
+
+                        let requirementTable = document.getElementById("edit-requirements");
+                        if (requirementTable) {
+                            requirementTable.innerHTML = "";  // Clear table
+                            data.requirements.forEach(req => {
+                                let row = `<tr>
+                                    <td><input type="text" class="form-control" value="${req.requirement_name}"></td>
+                                    <td><input type="number" class="form-control quantity" value="${req.quantity}" oninput="updateAmount(this)"></td>
+                                    <td><input type="number" class="form-control price" value="${req.price}" oninput="updateAmount(this)"></td>
+                                    <td><input type="text" class="form-control amount" value="${req.amount}" readonly></td>
+                                    <td><input type="text" class="form-control" value="${req.description}"></td>
+                                </tr>`;
+                                requirementTable.innerHTML += row;
+                            });
+                        } else {
+                            console.error("❌ Error: 'edit-requirements' table not found!");
+                        }
+//<td><input type="text" class="form-control" value="${req.amount}" readonly></td>
+                        // ✅ Wait until the modal element is available before initializing
+
+
+                        setTimeout(() => {
+                            let modalElement = document.getElementById("queryEditModal");
+                            if (modalElement) {
+                                console.log("this is the prob")
+                                // new bootstrap.Modal(modalElement).show();
+                            } else {
+                                console.error("❌ Error: 'queryEditModal' modal not found!");
+                            }
+                        }, 1000);
+
+                        new bootstrap.Modal(document.getElementById("queryEditModal")).show();
+                    } else {
+                        Swal.fire("Error", "Failed to fetch query details!", "error");
+                    }
+                })
+                .catch(error => console.error("Error fetching query details:", error));
+        });
+    });
+    window.updateAmount = function (input) {
+        let row = input.closest("tr");
+        let quantity = parseFloat(row.querySelector(".quantity").value) || 0;
+        let price = parseFloat(row.querySelector(".price").value) || 0;
+        let amount = quantity * price;
+        row.querySelector(".amount").value = amount.toFixed(2); // Display as 2 decimal places
+    };
+
+
+    document.getElementById("editRequestForm").addEventListener("submit", function (event) {
+        event.preventDefault();
+        let formData = new FormData(this);
+        formData.append("approval_id", document.getElementById("modal-query-approval-id").value);
+        formData.append("csrfmiddlewaretoken", document.querySelector("[name=csrfmiddlewaretoken]").value); // ✅ Add CSRF token
+        // formData.append("doc_id", document.getElementById("modal-query-doc-id").value);
+        // let csrfToken=document.querySelector("#editRequestForm[name=crsfmiddlewaretoken]").values;
+
+        fetch("/submit_edited_request/", {
+            method: "POST",
+            body: formData,
+            // headers:{"X-CSRFToken":csrfToken},
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                Swal.fire("Success", "Request updated successfully!", "success").then(() => location.reload());
+            } else {
+                Swal.fire("Error", "Failed to update request!", "error");
+            }
+        })
+        .catch(error => console.error("Error updating request:", error));
+    });
+});
+
+document.getElementById("submitEditedRequest").addEventListener("click", function () {
+    let formData = new FormData();
+    
+    let approvalId = document.getElementById("modal-query-approval-id").value;
+    let queryDocuments = document.querySelectorAll(".query-document-input");
+    let replyText = document.getElementById("queryReply").value.trim();  // ✅ Ensure reply is included
+
+    if (!replyText) {
+        Swal.fire("Error", "Please enter a query reply!", "error");
+        return;
+    }
+
+    if (!approvalId) {
+        Swal.fire("Error", "Missing approval ID!", "error");
+        return;
+    }
+
+    // Append approval ID
+    formData.append("approval_id", approvalId);
+    formData.append("query_reply", replyText);
+    formData.append("csrfmiddlewaretoken", document.querySelector("[name=csrfmiddlewaretoken]").value);
+
+    queryDocuments.forEach(input => {
+            if (input.files.length > 0) {
+                Array.from(input.files).forEach(file => {
+                    formData.append("query_documents", file);  // ✅ Append each file separately
+                });
+        }
+    });
+    console.log("Submitting FormData:", formData);
+    // Append edited document (if uploaded)
+    // if (editedDocument) {
+    //     formData.append("document", editedDocument);
+    // }
+
+    // Collect requirement table data
+    document.querySelectorAll("#edit-requirements tbody tr").forEach((row, index) => {
+        let reqName = row.cells[0].querySelector("input").value;
+        let quantity = row.cells[1].querySelector("input").value;
+        let price = row.cells[2].querySelector("input").value;
+        let description = row.cells[4].querySelector("input").value;
+        let requirementId = row.getAttribute("data-requirement-id") || null;  //newww
+
+
+        formData.append("requirements[]", JSON.stringify({
+            id: requirementId,
+            row_number: index + 1,  // ✅ Assign row number dynamically
+            name: reqName,
+            quantity: quantity,
+            price: price,
+            description: description
+        }));
+        
+    });
+
+    Swal.fire({
+            title: "Resolving Query...",
+            text: "Please wait while we process your request.",
+            allowOutsideClick: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
+
+
+
+    fetch("/submit_edited_request/", {
+        method: "POST",
+        body: formData,
+    })
+    .then(response => response.json())
+    .then(data => {
+        setTimeout(() => {
+            if (data.success) {
+                Swal.fire("Success", "Request updated successfully!", "success")
+                    .then(() => location.reload());
+            } else {
+                Swal.fire("Error", "Failed to update request!", "error");
+            }
+        }, 1500);
+    })
+    .catch(error => console.error("Error updating request:", error));
+});
+
+document.addEventListener("DOMContentLoaded", function () {
+    // Search functionality
+    document.getElementById("requirementSearch").addEventListener("input", function () {
+        let searchValue = this.value.toLowerCase();
+        let tableRows = document.querySelectorAll("#requirementTable tbody tr");
+
+        tableRows.forEach(row => {
+            let requirementText = row.cells[0].textContent.toLowerCase(); // Requirement column
+            if (requirementText.includes(searchValue)) {
+                row.style.display = ""; // Show row
+            } else {
+                row.style.display = "none"; // Hide row
+            }
+        });
+    });
+});
+
+document.addEventListener("DOMContentLoaded", function () {
+    document.getElementById("requirementSearch").addEventListener("keyup", function () {
+        let filter = this.value.toLowerCase();
+        let rows = document.querySelectorAll("#modalRequirements tr");
+
+        rows.forEach(row => {
+            let text = row.innerText.toLowerCase();
+            row.style.display = text.includes(filter) ? "" : "none";
+        });
+    });
+});
+
+document.addEventListener("DOMContentLoaded", function () {
+    let queryDocumentsContainer = document.getElementById("queryDocumentsContainer");
+
+    document.getElementById("addQueryDocument").addEventListener("click", function () {
+        let newInput = document.createElement("div");
+        newInput.classList.add("input-group", "mt-2");
+        newInput.innerHTML = `
+            <input type="file" name="query_documents" class="form-control query-document-input">
+            <button type="button" class="btn btn-danger remove-query-doc">Delete</button>
+        `;
+        queryDocumentsContainer.appendChild(newInput);
+    });
+
+
+});
+
+
+
+</script>
+
+
+{% endblock content %}

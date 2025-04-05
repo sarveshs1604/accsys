@@ -1,0 +1,167 @@
+{% load static %}
+ 
+<!-- ======= Header ======= -->
+<header id="header" class="header fixed-top d-flex align-items-center">
+
+  <div class="d-flex align-items-center justify-content-between">
+    <a href="https://accsysconsulting.com/" target="_blank" class="logo d-flex align-items-center">
+      <img src="{% static 'NiceAdmin/NiceAdmin/assets/img/outlook.png' %}" alt="">
+      <span class="d-none d-lg-block">Accsys</span>
+    </a>
+    <i class="bi bi-list toggle-sidebar-btn"></i>
+  </div><!-- End Logo -->
+
+   <div class="search-bar">
+     <form class="search-form d-flex align-items-center" method="POST" action="#">
+       <input type="text" name="query" placeholder="Search" title="Enter search keyword">
+       <button type="submit" title="Search"><i class="bi bi-search"></i></button>
+     </form>
+   </div>
+   
+   <!-- End Search Bar -->
+
+   <nav class="header-nav ms-auto">
+     <ul class="d-flex align-items-center">
+
+       <li class="nav-item d-block d-lg-none">
+         <a class="nav-link nav-icon search-bar-toggle " href="#">
+           <i class="bi bi-search"></i>
+         </a>
+       </li><!-- End Search Icon-->
+
+       <li class="nav-item dropdown">
+
+         <a class="nav-link nav-icon" href="#" data-bs-toggle="dropdown" id="task-icon">
+           <i class="bi bi-bell"></i>
+           <span class="badge bg-primary badge-number" id="task-count"></span>
+       </a><!-- End Notification Icon -->
+       
+       
+         <input type="hidden" id="profile-img-url" value="{% static 'NiceAdmin/NiceAdmin/assets/img/profile-img.jpg' %}" />
+
+         <ul class="dropdown-menu dropdown-menu-end dropdown-menu-arrow notifications" id="notifications-list">
+
+         </ul>
+         
+         
+         
+
+       </li>
+
+       <!-- <li class="nav-item dropdown">
+
+         <a class="nav-link nav-icon" href="#" data-bs-toggle="dropdown">
+           <i class="bi bi-chat-left-text"></i>
+           <span class="badge bg-success badge-number">3</span>
+         </a>
+
+         <ul class="dropdown-menu dropdown-menu-end dropdown-menu-arrow messages">
+           <li class="dropdown-header">
+             You have 3 new messages
+             <a href="#"><span class="badge rounded-pill bg-primary p-2 ms-2">View all</span></a>
+           </li>
+           <li>
+             <hr class="dropdown-divider">
+           </li>
+
+           <li class="message-item">
+             <a href="#">
+               <img src="{% static 'NiceAdmin/NiceAdmin/assets/img/messages-1.jpg' %}" alt="" class="rounded-circle">
+               <div>
+                 <h4>Maria Hudson</h4>
+                 <p>Velit asperiores et ducimus soluta repudiandae labore officia est ut...</p>
+                 <p>4 hrs. ago</p>
+               </div>
+             </a>
+           </li>
+           <li>
+             <hr class="dropdown-divider">
+           </li>
+
+           <li class="message-item">
+             <a href="#">
+               <img src="{% static 'NiceAdmin/NiceAdmin/assets/img/messages-2.jpg' %}" alt="" class="rounded-circle">
+               <div>
+                 <h4>Anna Nelson</h4>
+                 <p>Velit asperiores et ducimus soluta repudiandae labore officia est ut...</p>
+                 <p>6 hrs. ago</p>
+               </div>
+             </a>
+           </li>
+           <li>
+             <hr class="dropdown-divider">
+           </li>
+
+           <li class="message-item">
+             <a href="#">
+               <img src="{% static 'NiceAdmin/NiceAdmin/assets/img/messages-3.jpg' %}" alt="" class="rounded-circle">
+               <div>
+                 <h4>David Muldon</h4>
+                 <p>Velit asperiores et ducimus soluta repudiandae labore officia est ut...</p>
+                 <p>8 hrs. ago</p>
+               </div>
+             </a>
+           </li>
+           <li>
+             <hr class="dropdown-divider">
+           </li>
+
+           <li class="dropdown-footer">
+             <a href="#">Show all messages</a>
+           </li>
+
+         </ul>
+
+       </li> -->
+
+       <li class="nav-item dropdown pe-3">
+
+         <a class="nav-link nav-profile d-flex align-items-center pe-0" href="#" data-bs-toggle="dropdown">
+           <img src="" alt="Profile" class="w-50 rounded-circle" id="profileImage">
+
+           <i class="ri-user-3-fill" style="font-size: 25px;"></i> <!-- Show icon when image doesn't exist -->
+      
+           <span class="d-none d-md-block dropdown-toggle ps-2">{{ request.user.username }}</span>
+       </a>
+         
+         <!-- End Profile Iamge Icon -->
+
+         <ul class="dropdown-menu dropdown-menu-end dropdown-menu-arrow profile">
+           <li class="dropdown-header">
+            <h6>{{ user.username }}</h6>
+            <a class="nav-link" href="{% url 'upload_signature' %}">signature</a>
+
+        
+            
+            <h6>
+             <!-- No Group Assigned  Fallback if the user has no groups -->
+            </h6>
+             <!-- <span>Web Designer</span> -->
+           </li>
+           <li>
+             <hr class="dropdown-divider">
+           </li>
+
+           
+           
+
+           <li>
+            <form method="POST" action="{% url 'logout' %}" style="display:inline;">
+                {% csrf_token %}
+                <button type="submit" class="dropdown-item d-flex align-items-center">
+                    <i class="bi bi-box-arrow-right"></i>
+                    <span>LogOut</span>
+                </button>
+            </form>
+         </li>
+
+         </ul><!-- End Profile Dropdown Items -->
+       </li><!-- End Profile Nav -->
+
+     </ul>
+   </nav><!-- End Icons Navigation -->
+
+  
+
+
+ </header><!-- End Header -->

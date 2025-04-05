@@ -1,0 +1,1118 @@
+{% extends 'main.html' %}
+
+{% block content %}
+
+<main id="main" class="main">
+    <!-- for the cursor invisible torture???? but not workking -->
+    <style>
+        input, textarea, select {
+            cursor: text !important;
+        }
+    </style>
+    <!-- <div class="d-flex justify-content-between align-items-center"> -->
+    
+        <div class="pagetitle">
+            <h1 >Approval</h1>
+            <nav>
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="#">Dashboard</a></li>
+                    <li class="breadcrumb-item">Approval</li>
+                </ol>
+            </nav>
+        </div>
+        <!-- {% if user.is_superuser %}
+        <div>
+            <a href="{% url 'edit_email_template' %}" class="btn btn-warning">Edit Email Body</a>
+        </div>
+        {% endif %} -->
+    </div>
+    <!-- <div class="pagetitle">
+        <h1 class="card-title">Approval</h1>
+    </div>
+    {% if user.is_superuser %}
+    <div class="text-end">
+    <a href="{% url 'edit_email_template' %}" class="btn btn-warning">Edit Email Body</a>
+    </div>
+    {% endif %} -->
+    <!-- {% if request.user.userprofile.signature %}
+    <div class="text-end">
+        <a href="{% url 'document' %}" class="btn btn-secondary mt-2 float-end">Back</a>
+    </div>
+    {% endif %} -->
+    <section class="section">
+        <div class="card">
+
+            <div class="card-body pt-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    {% if user.is_superuser %}
+                    <div>
+                        <a href="{% url 'edit_email_template' %}" class="btn btn-primary">Edit Email Body</a>
+                    </div>
+                    {% endif %}
+                </div>
+                <!-- Bootstrap Navigation Tabs -->
+                <ul class="nav nav-tabs nav-tabs-bordered">
+                    <li class="nav-item">
+                        <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#request-form">Request Form</button>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'approval_list' %}">Pending Approvals</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'approval_details' %}">Approval History</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'request_history' %}">Request History</a>
+                    </li>
+                </ul>
+
+                <div class="tab-content pt-2">
+                    <div class="tab-pane fade show active" id="request-form">
+                        <h2 class="card-title">Document</h2>
+                        <form id="documentForm" method="POST" action="{% url 'document' %}" enctype="multipart/form-data">
+                            {% csrf_token %}
+                            
+                            <!-- Document ID (Auto-generated) -->
+                            <div class="mb-3">
+                                <label for="doc-id" class="form-label">Document ID <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="doc-id" name="doc-id" value="{{ next_doc_number }}" readonly>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="document" class="form-label">Upload Document<span class="text-danger">*</span></label>
+                                <input type="file" class="form-control" id="document" name="document" required>
+                            </div>
+
+                            <!-- Description Text Area -->
+                            <div class="mb-3">
+                                <label for="description" name="description" class="form-label">Description <span class="text-danger">*</span></label>
+                                <textarea class="form-control" id="description" name="description" rows="5" placeholder="Enter detailed information..." required></textarea>
+                            </div>
+
+                            <!-- Highlight Points Section -->
+                            <div class="mb-3">
+                                <label class="form-label">Highlight Points <span class="text-danger">*</span></label>
+                                <div id="highlight-container">
+                                    <div class="input-group mb-2 highlight-point">
+                                        <input type="text" class="form-control" placeholder="Enter highlight point" name="highlight_points[]" required>
+                                        <button type="button" class="btn btn-danger remove-btn">Delete</button>
+                                    </div>
+                                </div>
+                                <button type="button" class="btn btn-primary" id="add-highlight">Add Highlight</button>
+
+                            </div>
+
+                            <!-- Requirements Table -->
+                            <div class="mb-3">
+                                <label class="form-label">Requirements Table <span class="text-danger">*</span></label>
+                                <table class="table" id="requirements-table">
+                                    <thead>
+                                        <tr>
+                                            <th>S.no</th>
+                                            <th>Requirement</th>
+                                            <th>Quantity</th>
+                                            <th>Price</th>
+                                            <th>Amount</th>
+                                            <th>Description</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr class="requirement-row">
+                                            <td><input type="number" class="form-control sno" placeholder="1" readonly></td>
+                                            <td><input type="text" class="form-control" name="requirement[]"  required></td>
+                                            <td><input type="number" class="form-control quantity" name="quantity[]"  required></td>
+                                            <td><input type="number" step="0.01" class="form-control price" name="price[]" required></td>
+                                            <td><input type="text" class="form-control amount" readonly></td>
+                                            <td><input type="text" class="form-control description-input" name="req_description[]" required></td>                                            
+                                            <td><button type="button" class="btn btn-danger remove-row">Delete</button></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                                <button type="button" class="btn btn-primary " id="add-row">Add Row</button>
+                            </div>
+
+                            <!-- Select Approvers from Django Admin -->
+                            <!-- Approvers Selection -->
+                            <div class="mb-3">
+                                <label class="form-label">Select Approvers <span class="text-danger">*</span></label>
+                                <div id="approvers-container">
+                                    <div class="input-group mb-2 approver-field">
+                                        <span class="input-group-text approver-number">Approver 1:</span>
+                                        <select class="form-control approver-select" name="approvers[]" onchange="updateApproverOptions()" required>
+                                            <option value="">Select Approver</option>
+                                            {% for user in users %}
+                                                <option value="{{ user.id }}">{{ user.username }}</option>
+                                            {% endfor %}
+                                        </select>
+                                        <button type="button" class="btn btn-danger remove-approver">Delete</button>
+                                    </div>
+                                </div>
+                                <button type="button" class="btn btn-primary" id="add-approver">Add Approver</button>
+                            </div>
+                            <!-- <button id="submit-btn" type="submit" class="btn btn-primary">
+                                <span id="submit-btn-text">Submit</span>
+                                <span id="submit-btn-spinner" class="spinner-border spinner-border-sm d-none ms-2" role="status" aria-hidden="true"></span>
+                            </button> -->
+                            <button id="submit-btn" type="submit" class="btn btn-primary">Submit</button>
+
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+</main>
+<!-- Signature Upload Modal -->
+<div class="modal fade" id="signatureModal" tabindex="-1" aria-labelledby="signatureModalLabel" aria-hidden="true" data-backdrop="static" data-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Upload Your Digital Signature</h5>
+            </div>
+            <div class="modal-body">
+                <form id="signatureForm" method="POST" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <input type="file" class="form-control" name="signature" id="signature" accept="image/*" required>
+                    <button type="submit" class="btn btn-primary w-100 mt-3">Upload</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+   document.getElementById("add-highlight")?.addEventListener("click", () => {
+    document.getElementById("highlight-container").insertAdjacentHTML("beforeend", `
+        <div class="input-group mb-2 highlight-point">
+            <input type="text" class="form-control" name="highlight_points[]" placeholder="Enter highlight point">
+            <button type="button" class="btn btn-danger remove-btn">Delete</button>
+        </div>
+    `);
+});
+
+// Event delegation for removing highlights
+document.addEventListener("click", (event) => {
+    if (event.target.classList.contains("remove-btn")) {
+        event.target.closest(".highlight-point").remove();
+    }
+});
+document.addEventListener("DOMContentLoaded", function () {
+    let addRowBtn = document.getElementById("add-row");
+
+    if (addRowBtn) {
+        addRowBtn.addEventListener("click", function () {
+            let tableBody = document.querySelector("#requirements-table tbody");
+
+            // Add only one row at a time
+            let newRow = document.createElement("tr");
+            newRow.classList.add("requirement-row");
+            newRow.innerHTML = `
+                <td><input type="number" class="form-control sno" placeholder="1" readonly></td>
+                                            <td><input type="text" class="form-control" name="requirement[]"  required></td>
+                                            <td><input type="number" class="form-control quantity" name="quantity[]"  required></td>
+                                            <td><input type="number" step="0.01" class="form-control price" name="price[]" required></td>
+                                            <td><input type="text" class="form-control amount" readonly></td>
+                                            <td><input type="text" class="form-control description-input" name="req_description[]" required></td>                                            
+                                            <td><button type="button" class="btn btn-danger remove-row">Delete</button></td>
+            `;
+            tableBody.appendChild(newRow);
+            
+            updateSerialNumbers();
+
+        });
+    }
+
+    // Event delegation for deleting rows
+    document.addEventListener("click", function (event) {
+        if (event.target.classList.contains("remove-row")) {
+            event.target.closest("tr").remove();
+            updateSerialNumbers();
+        }
+    });
+
+    // Function to auto-generate Serial Numbers
+    function updateSerialNumbers() {
+        document.querySelectorAll("#requirements-table tbody tr").forEach((row, index) => {
+            let snoField = row.querySelector(".sno");
+            if (snoField) snoField.value = index + 1; // Auto-generate S.no
+        });
+    }
+});
+
+// Function to update the amount in the row
+function updateAmount(event) {
+    let row = event.target.closest("tr");
+    let quantity = parseFloat(row.querySelector(".quantity").value) || 0;
+    let price = parseFloat(row.querySelector(".price").value) || 0;
+    let amount = quantity * price;
+    row.querySelector(".amount").value = amount.toFixed(2); // Display as 2 decimal places
+}
+
+// Automatically calculate amount when quantity or price changes
+document.addEventListener("input", function (event) {
+    if (event.target.classList.contains("quantity") || event.target.classList.contains("price")) {
+        updateAmount(event);
+    }
+});
+
+document.addEventListener("DOMContentLoaded", function () {
+    let docInput = document.getElementById("doc-id");
+
+    if (docInput) {  // Ensure the element exists
+        if (!docInput.value.trim()) {  
+            console.error("Document ID is missing in the backend!");
+        }
+    } else {
+        console.error("Document ID input field (#doc-id) not found!");
+    }
+
+    document.querySelector("form").addEventListener("submit", function (event) {
+        if (docInput && !docInput.value.trim()) {
+            alert("Document ID is missing!");
+            event.preventDefault();
+        }
+    });
+});
+//approver true
+//     document.addEventListener("click", function (event) {
+//         if (event.target.classList.contains("remove-approver")) {
+//             event.target.parentElement.remove();
+//             updateApproverNumbers();
+//             updateApproverOptions();
+//         }
+//     });
+
+// //     updateApproverOptions(); // Ensure initial selection updates
+// // });
+// function updateApproverOptions() {
+//             let selectedValues = Array.from(document.querySelectorAll(".approver-select")).map(select => select.value);
+//             document.querySelectorAll(".approver-select").forEach(select => {
+//                 Array.from(select.options).forEach(option => {
+//                     if (option.value && selectedValues.includes(option.value) && select.value !== option.value) {
+//                         option.disabled = true;
+//                     } else {
+//                         option.disabled = false;
+//                     }
+//                 });
+//             });
+//         }
+//         document.getElementById("add-approver").addEventListener("click", function () {
+//             let container = document.getElementById("approvers-container");
+//             let newInput = document.createElement("div");
+//             newInput.classList.add("input-group", "mb-2", "approver-field");
+//             newInput.innerHTML = '<select class="form-control approver-select" name="approvers[]" onchange="updateApproverOptions()">' +
+//                 '<option value="">Select Approver</option>' +
+//                 '{% for user in users %}<option value="{{ user.id }}">{{ user.username }}</option>{% endfor %}' +
+//                 '</select>' +
+//                 '<button type="button" class="btn btn-danger remove-approver">Delete</button>';
+//             container.appendChild(newInput);
+//             updateApproverNumbers();
+//             updateApproverOptions();
+//         });
+
+//trueee
+// document.getElementById("documentForm").addEventListener("submit", function (event) {
+//     event.preventDefault();  // Prevent default form submission
+
+//     Swal.fire({
+//         title: "Submitting...",
+//         text: "Please wait while we process your request.",
+//         allowOutsideClick: false,
+//         didOpen: () => {
+//             Swal.showLoading();
+//         }
+//     });
+
+//     // Submit form after showing the alert
+//     setTimeout(() => {
+//         event.target.submit();  // Proceed with form submission
+//     }, 1000);  // Delay for better user experience
+// });
+document.addEventListener("DOMContentLoaded", function () {
+    document.getElementById("add-approver").addEventListener("click", function () {
+        let container = document.getElementById("approvers-container");
+        let approverFields = container.getElementsByClassName("approver-field");
+        let newIndex = approverFields.length + 1;
+
+        let newInput = document.createElement("div");
+        newInput.classList.add("input-group", "mb-2", "approver-field");
+
+        newInput.innerHTML = `
+            <span class="input-group-text approver-number">Approver ${newIndex}:</span>
+            <select class="form-control approver-select" name="approvers[]" onchange="updateApproverOptions()">
+                <option value="">Select Approver</option>
+                {% for user in users %}
+                    <option value="{{ user.id }}">{{ user.username }}</option>
+                {% endfor %}
+            </select>
+            <button type="button" class="btn btn-danger remove-approver">Delete</button>
+        `;
+
+        container.appendChild(newInput);
+        updateApproverNumbers();
+        updateApproverOptions();
+    });
+
+    // Event delegation for deleting approvers
+    document.addEventListener("click", function (event) {
+        if (event.target.classList.contains("remove-approver")) {
+            event.target.closest(".approver-field").remove();
+            updateApproverNumbers();
+            updateApproverOptions();
+        }
+    });
+
+    function updateApproverNumbers() {
+        let approverNumbers = document.querySelectorAll(".approver-number");
+        approverNumbers.forEach((label, index) => {
+            label.textContent = `Approver ${index + 1}:`;
+        });
+    }
+
+    window.updateApproverOptions = function () {
+        let selectedValues = new Set();
+        let selects = document.querySelectorAll(".approver-select");
+
+        // Collect selected values
+        selects.forEach(select => {
+            if (select.value) {
+                selectedValues.add(select.value);
+            }
+        });
+
+        // Disable selected values in other dropdowns
+        selects.forEach(select => {
+            let options = select.querySelectorAll("option");
+            options.forEach(option => {
+                if (option.value !== "" && selectedValues.has(option.value)) {
+                    if (option.value === select.value) {
+                        option.disabled = false; // Keep the selected one enabled
+                    } else {
+                        option.disabled = true;
+                    }
+                } else {
+                    option.disabled = false;
+                }
+            });
+        });
+    };
+}); 
+
+
+// document.addEventListener("DOMContentLoaded", function () {
+//     var form = document.getElementById("documentForm");
+
+//     if (form) {
+//         form.addEventListener("submit", function (event) {
+//             event.preventDefault(); // Prevent default form submission
+
+//             Swal.fire({
+//                 title: "Submitting...",
+//                 text: "Please wait while we process your request.",
+//                 allowOutsideClick: false,
+//                 didOpen: function () {
+//                     Swal.showLoading();
+//                     form.submit();
+//                 }
+//             });
+
+//             // Simulate form submission and show success message after processing
+//             setTimeout(function () {
+
+//                 Swal.fire({
+//                     title: "Success",
+//                     text: "The Form Has Been Submitted Successfully!",
+//                     icon: "success",
+//                     confirmButtonText: "OK"
+//                 });
+//             }, 5000); // ✅ Wait for 2 seconds before showing success message
+//         });
+//     }
+// });
+
+
+document.getElementById("document").addEventListener("change", function () {
+    let file = this.files[0];
+    let maxSize = 5 * 1024 * 1024; // 5MB
+    if (file && file.size > maxSize){
+        Swal.fire({
+            title: "File Too Large!",
+            text: "File size must be less than 5MB.",
+            icon: "error",
+            confirmButtonText: "OK"
+        });
+        this.value = ""; // Clear file input
+    }
+});
+
+document.addEventListener("DOMContentLoaded", function () {
+    fetch("/check_signature/")
+        .then(response => response.json())
+        .then(data => {
+            if (!data.has_signature) {
+                let signatureModal = new bootstrap.Modal(document.getElementById("signatureModal"));
+                signatureModal.show();
+            }
+        });
+
+    document.getElementById("signatureForm").addEventListener("submit", function (event) {
+        event.preventDefault();
+        let formData = new FormData(this);
+
+        fetch("/upload_signature/", {
+            method: "POST",
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                Swal.fire("Success", "Signature uploaded successfully!", "success").then(() => {
+                    location.reload();
+                });
+            } else {
+                Swal.fire("Error", data.error, "error");
+            }
+        })
+        .catch(error => {
+            console.error("Error uploading signature:", error);
+            Swal.fire("Error", "Failed to upload signature!", "error");
+        });
+    });
+});
+
+//testing
+    // document.addEventListener("DOMContentLoaded", function () {
+    //     document.getElementById("submit-btn").addEventListener("click", function () {
+    //         let missingFields = [];
+    
+    //         // ✅ Check Document Upload
+    //         let documentInput = document.getElementById("document");
+    //         if (!documentInput.value) missingFields.push("Upload Document");
+    
+    //         // ✅ Check Description
+    //         let description = document.getElementById("description").value.trim();
+    //         if (!description) missingFields.push("Description");
+    
+    //         // ✅ Check Highlight Points
+    //         let highlightPoints = document.querySelectorAll("input[name='highlight_points[]']");
+    //         if (highlightPoints.length === 0 || Array.from(highlightPoints).every(hp => !hp.value.trim())) {
+    //             missingFields.push("At least one Highlight Point");
+    //         }
+    
+    //         // ✅ Check Requirements Table
+    //         let requirementRows = document.querySelectorAll("#requirements-table tbody tr");
+    //         if (requirementRows.length === 0) {
+    //             missingFields.push("At least one Requirement");
+    //         } else {
+    //             requirementRows.forEach((row, index) => {
+    //                 let requirement = row.querySelector("input[name='requirement[]']").value.trim();
+    //                 let quantity = row.querySelector("input[name='quantity[]']").value.trim();
+    //                 let price = row.querySelector("input[name='price[]']").value.trim();
+    //                 let description = row.querySelector("input[name='req_description[]']").value.trim();
+    
+    //                 if (!requirement || !quantity || !price || !description) {
+    //                     missingFields.push(`Complete all fields in Requirement Row ${index + 1}`);
+    //                 }
+    //             });
+    //         }
+    
+    //         // ✅ Check Approvers
+    //         let approvers = document.querySelectorAll("select[name='approvers[]']");
+    //         if (approvers.length === 0 || Array.from(approvers).every(a => a.value === "")) {
+    //             missingFields.push("At least one Approver");
+    //         }
+    
+    //         // ✅ Show SweetAlert if there are missing fields
+    //         if (missingFields.length > 0) {
+    //             Swal.fire({
+    //                 title: "Missing Required Fields!",
+    //                 html: `<ul style="text-align:left">${missingFields.map(field => `<li>${field}</li>`).join("")}</ul>`,
+    //                 icon: "warning",
+    //                 confirmButtonText: "OK"
+    //             });
+    //             return;
+    //         }
+    
+    //         // ✅ If all fields are filled, submit the form
+    //         Swal.fire({
+    //             title: "Submitting...",
+    //             text: "Please wait while we process your request.",
+    //             allowOutsideClick: false,
+    //             didOpen: () => {
+    //                 Swal.showLoading();
+    //             }
+    //         });
+    
+    //         setTimeout(() => {
+    //             document.getElementById("documentForm").submit();
+    //         }, 1000);
+    //     });
+    // });
+
+//testing 2
+//     document.addEventListener("DOMContentLoaded", function () {
+//     var form = document.getElementById("documentForm");
+//     var submitBtn = document.getElementById("submit-btn");
+
+//     if (form && submitBtn) {
+//         submitBtn.addEventListener("click", function (event) {
+//             event.preventDefault(); // Prevent default submission
+
+//             let missingFields = [];
+
+//             // ✅ Check Document Upload
+//             let documentInput = document.getElementById("document");
+//             if (!documentInput.value) missingFields.push("Upload Document");
+
+//             // ✅ Check Description
+//             let description = document.getElementById("description").value.trim();
+//             if (!description) missingFields.push("Description");
+
+//             // ✅ Check Highlight Points
+//             let highlightPoints = document.querySelectorAll("input[name='highlight_points[]']");
+//             if (highlightPoints.length === 0 || Array.from(highlightPoints).every(hp => !hp.value.trim())) {
+//                 missingFields.push("At least one Highlight Point");
+//             }
+
+//             // ✅ Check Requirements Table
+//             let requirementRows = document.querySelectorAll("#requirements-table tbody tr");
+//             if (requirementRows.length === 0) {
+//                 missingFields.push("At least one Requirement");
+//             } else {
+//                 requirementRows.forEach((row, index) => {
+//                     let requirement = row.querySelector("input[name='requirement[]']").value.trim();
+//                     let quantity = row.querySelector("input[name='quantity[]']").value.trim();
+//                     let price = row.querySelector("input[name='price[]']").value.trim();
+//                     let reqDescription = row.querySelector("input[name='req_description[]']").value.trim();
+
+//                     if (!requirement || !quantity || !price || !reqDescription) {
+//                         missingFields.push(`Complete all fields in Requirement Row ${index + 1}`);
+//                     }
+//                 });
+//             }
+
+//             // ✅ Check Approvers
+//             let approvers = document.querySelectorAll("select[name='approvers[]']");
+//             if (approvers.length === 0 || Array.from(approvers).every(a => a.value === "")) {
+//                 missingFields.push("At least one Approver");
+//             }
+
+//             // ✅ Show SweetAlert if there are missing fields
+//             if (missingFields.length > 0) {
+//                 Swal.fire({
+//                     title: "Missing Required Fields!",
+//                     html: `<ul style="text-align:left">${missingFields.map(field => `<li>${field}</li>`).join("")}</ul>`,
+//                     icon: "warning",
+//                     confirmButtonText: "OK"
+//                 });
+//                 return;
+//             }
+
+//             // ✅ If all fields are valid, show loading Swal and submit the form
+//             Swal.fire({
+//                 title: "Submitting...",
+//                 text: "Please wait while we process your request.",
+//                 allowOutsideClick: false,
+//                 didOpen: () => {
+//                     Swal.showLoading();
+//                 }
+//             });
+
+//             setTimeout(() => {
+//                 form.submit();
+//             }, 1000);
+//         });
+//     }
+// });
+
+//testing 3
+// document.addEventListener("DOMContentLoaded", function () {
+//     var form = document.getElementById("documentForm");
+//     var submitBtn = document.getElementById("submit-btn");
+
+//     if (form && submitBtn) {
+//         submitBtn.addEventListener("click", function (event) {
+//             event.preventDefault(); // Prevent default submission
+
+//             let missingFields = [];
+
+//             // ✅ Check Document Upload
+//             let documentInput = document.getElementById("document");
+//             if (!documentInput.value) missingFields.push("Upload Document");
+
+//             // ✅ Check Description
+//             let description = document.getElementById("description").value.trim();
+//             if (!description) missingFields.push("Description");
+
+//             // ✅ Check Highlight Points
+//             let highlightPoints = document.querySelectorAll("input[name='highlight_points[]']");
+//             if (highlightPoints.length === 0 || Array.from(highlightPoints).every(hp => !hp.value.trim())) {
+//                 missingFields.push("At least one Highlight Point");
+//             }
+
+//             // ✅ Check Requirements Table
+//             let requirementRows = document.querySelectorAll("#requirements-table tbody tr");
+//             if (requirementRows.length === 0) {
+//                 missingFields.push("At least one Requirement");
+//             } else {
+//                 requirementRows.forEach((row, index) => {
+//                     let requirement = row.querySelector("input[name='requirement[]']").value.trim();
+//                     let quantity = row.querySelector("input[name='quantity[]']").value.trim();
+//                     let price = row.querySelector("input[name='price[]']").value.trim();
+//                     let reqDescription = row.querySelector("input[name='req_description[]']").value.trim();
+
+//                     if (!requirement || !quantity || !price || !reqDescription) {
+//                         missingFields.push(`Complete all fields in Requirement Row ${index + 1}`);
+//                     }
+//                 });
+//             }
+
+//             // ✅ Check Approvers
+//             let approvers = document.querySelectorAll("select[name='approvers[]']");
+//             if (approvers.length === 0 || Array.from(approvers).every(a => a.value === "")) {
+//                 missingFields.push("At least one Approver");
+//             }
+
+//             // ✅ Show SweetAlert if there are missing fields
+//             if (missingFields.length > 0) {
+//                 Swal.fire({
+//                     title: "Missing Required Fields!",
+//                     html: `<ul style="text-align:left">${missingFields.map(field => `<li>${field}</li>`).join("")}</ul>`,
+//                     icon: "warning",
+//                     confirmButtonText: "OK"
+//                 });
+//                 return;
+//             }
+
+//             // ✅ Show "Submitting..." loading message
+//             Swal.fire({
+//                 title: "Submitting...",
+//                 text: "Please wait while we process your request.",
+//                 allowOutsideClick: false,
+//                 didOpen: () => {
+//                     Swal.showLoading();
+//                 }
+//             });
+
+//             // ✅ Submit form after delay
+//             setTimeout(() => {
+//                 form.submit();
+//             }, 1000);
+//         });
+//     }
+// });
+
+// // ✅ Show Success Message After Form Submission
+// document.addEventListener("DOMContentLoaded", function () {
+//     let successMessage = "{{ messages.success }}"; // Django success message
+//     if (successMessage.trim() !== "") {
+//         Swal.fire({
+//             title: "Success",
+//             text: successMessage,
+//             icon: "success",
+//             confirmButtonText: "OK"
+//         }).then(() => {
+//             window.location.href = "{% url 'request_history' %}"; // Change this to your redirect URL
+//         });
+//     }
+// });
+
+//testing 4
+
+// document.addEventListener("DOMContentLoaded", function () {
+//     var form = document.getElementById("documentForm");
+//     var submitBtn = document.getElementById("submit-btn");
+
+//     if (form && submitBtn) {
+//         submitBtn.addEventListener("click", function (event) {
+//             event.preventDefault(); // Prevent default submission
+
+//             let missingFields = [];
+
+//             // ✅ Check Document Upload
+//             let documentInput = document.getElementById("document");
+//             if (!documentInput.value) missingFields.push("Upload Document");
+
+//             // ✅ Check Description
+//             let description = document.getElementById("description").value.trim();
+//             if (!description) missingFields.push("Description");
+
+//             // ✅ Check Highlight Points
+//             let highlightPoints = document.querySelectorAll("input[name='highlight_points[]']");
+//             if (highlightPoints.length === 0 || Array.from(highlightPoints).every(hp => !hp.value.trim())) {
+//                 missingFields.push("At least one Highlight Point");
+//             }
+
+//             // ✅ Check Requirements Table
+//             let requirementRows = document.querySelectorAll("#requirements-table tbody tr");
+//             if (requirementRows.length === 0) {
+//                 missingFields.push("At least one Requirement");
+//             } else {
+//                 requirementRows.forEach((row, index) => {
+//                     let requirement = row.querySelector("input[name='requirement[]']").value.trim();
+//                     let quantity = row.querySelector("input[name='quantity[]']").value.trim();
+//                     let price = row.querySelector("input[name='price[]']").value.trim();
+//                     let reqDescription = row.querySelector("input[name='req_description[]']").value.trim();
+
+//                     if (!requirement || !quantity || !price || !reqDescription) {
+//                         missingFields.push(`Complete all fields in Requirement Row ${index + 1}`);
+//                     }
+//                 });
+//             }
+
+//             // ✅ Check Approvers
+//             let approvers = document.querySelectorAll("select[name='approvers[]']");
+//             if (approvers.length === 0 || Array.from(approvers).every(a => a.value === "")) {
+//                 missingFields.push("At least one Approver");
+//             }
+
+//             // ✅ Show SweetAlert if there are missing fields
+//             if (missingFields.length > 0) {
+//                 Swal.fire({
+//                     title: "Missing Required Fields!",
+//                     html: `<ul style="text-align:left">${missingFields.map(field => `<li>${field}</li>`).join("")}</ul>`,
+//                     icon: "warning",
+//                     confirmButtonText: "OK"
+//                 });
+//                 return;
+//             }
+
+//             // ✅ Show loading message while processing
+//             Swal.fire({
+//                 title: "Submitting...",
+//                 text: "Please wait while we process your request.",
+//                 allowOutsideClick: false,
+//                 didOpen: () => {
+//                     Swal.showLoading();
+//                 }
+//             });
+
+//             // ✅ Submit form after delay to show loading effect
+//             setTimeout(() => {
+//                 form.submit();
+//             }, 1000);
+//         });
+//     }
+// });
+
+// // ✅ Show success message and redirect after form submission
+// if (window.location.href.includes("success")) {
+//     Swal.fire({
+//         title: "Success!",
+//         text: "Your document has been submitted successfully.",
+//         icon: "success",
+//         confirmButtonText: "OK"
+//     }).then(() => {
+//         window.location.href = "/request_history/";
+//     });
+// }
+
+// testing 5
+// document.addEventListener("DOMContentLoaded", function () {
+//     var form = document.getElementById("documentForm");
+//     var submitBtn = document.getElementById("submit-btn");
+
+//     if (form && submitBtn) {
+//         submitBtn.addEventListener("click", function (event) {
+//             event.preventDefault(); // Prevent default submission
+
+//             let missingFields = [];
+
+//             // ✅ Check Document Upload
+//             let documentInput = document.getElementById("document");
+//             if (!documentInput.value) missingFields.push("Upload Document");
+
+//             // ✅ Check Description
+//             let description = document.getElementById("description").value.trim();
+//             if (!description) missingFields.push("Description");
+
+//             // ✅ Check Highlight Points
+//             let highlightPoints = document.querySelectorAll("input[name='highlight_points[]']");
+//             if (highlightPoints.length === 0 || Array.from(highlightPoints).every(hp => !hp.value.trim())) {
+//                 missingFields.push("At least one Highlight Point");
+//             }
+
+//             // ✅ Check Requirements Table
+//             let requirementRows = document.querySelectorAll("#requirements-table tbody tr");
+//             if (requirementRows.length === 0) {
+//                 missingFields.push("At least one Requirement");
+//             } else {
+//                 requirementRows.forEach((row, index) => {
+//                     let requirement = row.querySelector("input[name='requirement[]']").value.trim();
+//                     let quantity = row.querySelector("input[name='quantity[]']").value.trim();
+//                     let price = row.querySelector("input[name='price[]']").value.trim();
+//                     let reqDescription = row.querySelector("input[name='req_description[]']").value.trim();
+
+//                     if (!requirement || !quantity || !price || !reqDescription) {
+//                         missingFields.push(`Complete all fields in Requirement Row ${index + 1}`);
+//                     }
+//                 });
+//             }
+
+//             // ✅ Check Approvers
+//             let approvers = document.querySelectorAll("select[name='approvers[]']");
+//             if (approvers.length === 0 || Array.from(approvers).every(a => a.value === "")) {
+//                 missingFields.push("At least one Approver");
+//             }
+
+//             // ✅ Show SweetAlert if there are missing fields
+//             if (missingFields.length > 0) {
+//                 Swal.fire({
+//                     title: "Missing Required Fields!",
+//                     html: `<ul style="text-align:left">${missingFields.map(field => `<li>${field}</li>`).join("")}</ul>`,
+//                     icon: "warning",
+//                     confirmButtonText: "OK"
+//                 });
+//                 return;
+//             }
+
+//             // ✅ Show loading message while processing
+//             Swal.fire({
+//                 title: "Submitting...",
+//                 text: "Please wait while we process your request.",
+//                 allowOutsideClick: false,
+//                 didOpen: () => {
+//                     Swal.showLoading();
+//                 }
+//             });
+
+//             // ✅ Submit form after delay to show loading effect
+//             setTimeout(() => {
+//                 form.submit();
+//             }, 1000);
+//         });
+//     }
+// });
+
+// // ✅ Show success message **AFTER** form submission
+// document.addEventListener("submit", function (event) {
+//     if (event.target.id === "documentForm") {
+//         event.preventDefault(); // Stop default submission to handle success message
+
+//         Swal.fire({
+//             title: "Success!",
+//             text: "Your document has been submitted successfully.",
+//             icon: "success",
+//             confirmButtonText: "OK"
+//         }).then(() => {
+//             event.target.submit(); // Now submit the form
+//         });
+//     }
+// });
+
+// document.addEventListener("DOMContentLoaded", function () {
+//     var form = document.getElementById("documentForm");
+//     var submitBtn = document.getElementById("submit-btn");
+
+//     if (form && submitBtn) {
+//         submitBtn.addEventListener("click", function (event) {
+//             event.preventDefault(); // Prevent default submission
+
+//             let missingFields = [];
+
+//             // ✅ Check Document Upload
+//             let documentInput = document.getElementById("document");
+//             if (!documentInput.value) missingFields.push("Upload Document");
+
+//             // ✅ Check Description
+//             let description = document.getElementById("description").value.trim();
+//             if (!description) missingFields.push("Description");
+
+//             // ✅ Check Highlight Points
+//             let highlightPoints = document.querySelectorAll("input[name='highlight_points[]']");
+//             if (highlightPoints.length === 0 || Array.from(highlightPoints).every(hp => !hp.value.trim())) {
+//                 missingFields.push("At least one Highlight Point");
+//             }
+
+//             // ✅ Check Requirements Table
+//             let requirementRows = document.querySelectorAll("#requirements-table tbody tr");
+//             if (requirementRows.length === 0) {
+//                 missingFields.push("At least one Requirement");
+//             } else {
+//                 requirementRows.forEach((row, index) => {
+//                     let requirement = row.querySelector("input[name='requirement[]']").value.trim();
+//                     let quantity = row.querySelector("input[name='quantity[]']").value.trim();
+//                     let price = row.querySelector("input[name='price[]']").value.trim();
+//                     let reqDescription = row.querySelector("input[name='req_description[]']").value.trim();
+
+//                     if (!requirement || !quantity || !price || !reqDescription) {
+//                         missingFields.push(`Complete all fields in Requirement Row ${index + 1}`);
+//                     }
+//                 });
+//             }
+
+//             // ✅ Check Approvers
+//             let approvers = document.querySelectorAll("select[name='approvers[]']");
+//             if (approvers.length === 0 || Array.from(approvers).every(a => a.value === "")) {
+//                 missingFields.push("At least one Approver");
+//             }
+
+//             // ✅ Show SweetAlert if there are missing fields
+//             if (missingFields.length > 0) {
+//                 Swal.fire({
+//                     title: "Missing Required Fields!",
+//                     html: `<ul style="text-align:left">${missingFields.map(field => `<li>${field}</li>`).join("")}</ul>`,
+//                     icon: "warning",
+//                     confirmButtonText: "OK"
+//                 });
+//                 return;
+//             }
+
+//             // ✅ Show "Processing..." alert first
+//             Swal.fire({
+//                 title: "Submitting...",
+//                 text: "Please wait while we process your request.",
+//                 allowOutsideClick: false,
+//                 didOpen: () => {
+//                     Swal.showLoading();
+//                 }
+//             });
+
+//             // ✅ Simulate processing, then submit the form
+//             setTimeout(() => {
+//                 form.submit();
+//             }, 1000);
+//         });
+//     }
+// });
+
+// // ✅ Show success message AFTER submission and before redirection
+// document.addEventListener("submit", function (event) {
+//     if (event.target.id === "documentForm") {
+//         event.preventDefault(); // Stop default submission to handle success message
+
+//         // ✅ Show success message after processing
+//         Swal.fire({
+//             title: "Success!",
+//             text: "Your document has been submitted successfully.",
+//             icon: "success",
+//             confirmButtonText: "OK"
+//         }).then(() => {
+//             event.target.submit(); // Now submit the form for redirection
+//         });
+//     }
+// });
+
+document.addEventListener("DOMContentLoaded", function () {
+    var form = document.getElementById("documentForm");
+    var submitBtn = document.getElementById("submit-btn");
+
+    if (form && submitBtn) {
+        submitBtn.addEventListener("click", function (event) {
+            event.preventDefault(); // Prevent default submission
+
+            let missingFields = [];
+
+            // ✅ Check Document Upload
+            let documentInput = document.getElementById("document");
+            if (!documentInput.value) missingFields.push("Upload Document");
+
+            // ✅ Check Description
+            let description = document.getElementById("description").value.trim();
+            if (!description) missingFields.push("Description");
+
+            // ✅ Check Highlight Points
+            let highlightPoints = document.querySelectorAll("input[name='highlight_points[]']");
+            if (highlightPoints.length === 0 || Array.from(highlightPoints).every(hp => !hp.value.trim())) {
+                missingFields.push("At least one Highlight Point");
+            }
+
+            // ✅ Check Requirements Table
+            let requirementRows = document.querySelectorAll("#requirements-table tbody tr");
+            if (requirementRows.length === 0) {
+                missingFields.push("At least one Requirement");
+            } else {
+                requirementRows.forEach((row, index) => {
+                    let requirement = row.querySelector("input[name='requirement[]']").value.trim();
+                    let quantity = row.querySelector("input[name='quantity[]']").value.trim();
+                    let price = row.querySelector("input[name='price[]']").value.trim();
+                    let reqDescription = row.querySelector("input[name='req_description[]']").value.trim();
+
+                    if (!requirement || !quantity || !price || !reqDescription) {
+                        missingFields.push(`Complete all fields in Requirement Row ${index + 1}`);
+                    }
+                });
+            }
+
+            // ✅ Check Approvers
+            let approvers = document.querySelectorAll("select[name='approvers[]']");
+            if (approvers.length === 0 || Array.from(approvers).every(a => a.value === "")) {
+                missingFields.push("At least one Approver");
+            }
+
+            // ✅ Show SweetAlert if there are missing fields
+            if (missingFields.length > 0) {
+                Swal.fire({
+                    title: "Missing Required Fields!",
+                    html: `<ul style="text-align:left">${missingFields.map(field => `<li>${field}</li>`).join("")}</ul>`,
+                    icon: "warning",
+                    confirmButtonText: "OK"
+                });
+                return;
+            }
+
+            // ✅ Show "Submitting..." alert first
+            Swal.fire({
+                title: "Submitting...",
+                text: "Please wait while we process your request.",
+                allowOutsideClick: false,
+                showConfirmButton: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+            const formData = new FormData(form);
+    fetch(form.action, {
+        method: "POST",
+        body: formData
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error("Submission failed");
+        }
+        return response.text();  // or response.json() if your view returns JSON
+    })
+    .then(data => {
+        // After processing, show success alert then reload.
+        Swal.fire({
+            title: "Success!",
+            text: "Query submitted successfully!",
+            icon: "success",
+            // confirmButtonText: "OK",
+            timer: 1500,
+        }).then(() => {
+            location.reload();
+        });
+    })
+
+            // ✅ Simulate processing, then submit the form
+            // setTimeout(() => {
+            //     form.submit();
+            // }, 1000);
+        });
+    }
+});
+
+// ✅ Show success message AFTER submission and wait 5 sec before redirection
+document.addEventListener("submit", function (event) {
+    if (event.target.id === "documentForm") {
+        event.preventDefault(); // Stop default submission to handle success message
+
+        // ✅ Show success message after processing
+        Swal.fire({
+            title: "Success!",
+            text: "Your document has been submitted successfully.",
+            icon: "success",
+            confirmButtonText: "OK"
+        });
+
+        // ✅ Wait 5 seconds before redirection
+        setTimeout(() => {
+            event.target.submit(); // Now submit the form for redirection
+        }, 5000);
+    }
+});
+
+</script>
+    
+{% endblock content %}

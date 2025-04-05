@@ -1,0 +1,8 @@
+var approvalId = document.getElementById("modal-approval-id")?.value;
+var docId = document.getElementById("modal-doc-id")?.value;
+console.log("Approval ID:", approvalId);  // Should not be empty
+console.log("Document ID:", docId);        // Should not be empty
+if (!approvalId || !docId) {
+    Swal.fire("Error", "Missing approval or document ID!", "error");
+    return;
+}

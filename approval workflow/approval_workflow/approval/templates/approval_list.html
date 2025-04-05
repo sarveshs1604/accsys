@@ -1,0 +1,850 @@
+<!-- approval_list.html -->
+{% extends 'main.html' %}
+{% block content %}
+<main id="main" class="main" style="margin-left: 300px; max-width: 75%;">
+    <div class="pagetitle">
+        <h1 >Approval</h1>
+        <nav>
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="#">Dashboard</a></li>
+                <li class="breadcrumb-item">Approval</li>
+            </ol>
+        </nav>
+    </div>
+    <!-- <div class="pagetitle">
+        <h1 class="card-title">Approval</h1>
+    </div>End Page Title -->
+    <section class="section">
+        <div class="card">
+            <div class="card-body pt-3">
+                <ul class="nav nav-tabs nav-tabs-bordered">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'document' %}">Request form</a>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#request-form">Pending Approval</button>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'approval_details' %}">Approval History</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'request_history' %}">Request History</a>
+                    </li>
+                </ul>
+                <div style="position: absolute; top: 60px; left: 640px; width: 220px; height: 50px; background-color: #ffffff;"></div>
+
+                
+                
+                <table class="table datatable">
+                    <thead>
+                        <tr>
+                            <th>Document ID</th>
+                            <th>Requester</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for approval in approvals %}
+                        <tr>
+                            <td>{{ approval.request.doc_number }}</td>
+                            <td>{{ approval.request.created_by.username }}</td>
+                            <!-- <td>
+                                {% if approval.query_status == "Query Submitted" %}
+                                    <span class="badge bg-info text-dark">Query Submitted</span>
+                                {% elif approval.query_status == "Query Resolved - Pending Approval" %}
+                                    <span class="badge bg-primary">Query Resolved - Pending</span>
+                                {% elif approval.query_status == "Approved" %}
+                                    <span class="badge bg-success">{{ approval.query_status }}</span>
+                                {% elif approval.query_status == "Rejected" %}
+                                    <span class="badge bg-danger">{{ approval.query_status }}</span>
+                                {% else %}
+                                    <span class="badge bg-warning text-dark">{{ approval.query_status }}</span>
+                                {% endif %}
+                            </td> -->
+                            
+                            <td>
+                                {% if "Query Raised" in approval.computed_status %}
+                                  <span class="badge bg-info text-dark">{{ approval.computed_status }}</span>
+                                {% elif "Query Resolved" in approval.computed_status %}
+                                  <span class="badge bg-primary">{{ approval.computed_status }}</span>
+                                {% elif approval.computed_status == "Pending" %}
+                                  <span class="badge bg-warning text-dark">{{ approval.computed_status }}</span>
+                                {% endif %}
+                            </td>
+                            <!-- <td>{{ approval.computed_status }}</td> -->
+                            <td>
+                                <button class="btn btn-primary btn-sm open-approval-modal" data-approval-id="{{ approval.id }}" data-doc-id="{{ approval.request.id }}">
+                                    Review
+                                </button>
+                            </td>
+                            
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="text-center">No pending approvals</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                <div class="modal fade" id="approvalModal" tabindex="-1" aria-labelledby="approvalModalLabel" aria-hidden="true">
+                    <div class="modal-dialog modal-lg modal-dialog-centered">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="approvalModalLabel">Approval Details</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                <!-- <input type="hidden" id="modal-approval-id">-->
+                                <p><strong>Document ID:</strong> <span id="modal-doc-id"></span></p>
+                                <!-- Inside the Approval Modal -->
+                                <input type="hidden" id="modal-approval-id" value="{{ approval.id }}">
+                                <input type="hidden" id="modal-req-id" value="{{ approval.request_id }}">
+                                <p><strong>Requester:</strong> <span id="modal-requester"></span></p>
+                                <p><strong>Description:</strong> <span id="modal-description"></span></p>
+                                <p><strong>Status:</strong> <span id="modal-status"></span></p>
+
+                                <p><strong>Highlights</strong></p>
+                                <ul id="modalHighlightPoints"></ul>
+
+                                <p id="previousApproversTitle" class="d-none"><strong>Previous Approvers</strong></p>
+                                <ul id="modalPreviousApprovers"></ul>
+                                
+                                <!-- <p><strong>Previous Approvers</strong></p>
+                                <ul id="modalPreviousApprovers"></ul> -->
+                
+                                <!-- Requirements Table -->
+
+                                <p><strong>Requirement Table</strong></p>
+                                <!-- <input type="text" id="requirementSearch" class="form-control mb-2" placeholder="Search requirements..."> -->
+                                <!-- <div class="d-flex justify-content-end align-items-center mb-2">
+                                    <div class="input-group" style="width: 250px;">
+                                        <input type="text" id="requirementSearch" class="form-control" placeholder="Search">
+                                        <span class="input-group-text"><i class="bi bi-search"></i></span>
+                                    </div>
+                                </div>
+                                <div style="max-height: 300px;overflow-y: auto;">
+                                <table class="table table-bordered">
+                                    <thead>
+                                        <tr>
+                                            <th>Requirement</th>
+                                            <th>Quantity</th>
+                                            <th>Price</th>
+                                            <th>Amount</th>
+                                            <th>Description</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="modalRequirements">
+                                    </tbody>
+                                </table>
+                                </div> -->
+                                <div class="p-3 border rounded shadow-sm" style="background-color: #f8f9fa;">
+                                    <div class="d-flex justify-content-end mb-2">
+                                        <div class="input-group" style="width: 250px;">
+                                            <input type="text" id="requirementSearch" class="form-control" placeholder="Search requirements...">
+                                            <span class="input-group-text"><i class="bi bi-search"></i></span>
+                                        </div>
+                                    </div>
+                                    <div style="max-height: 300px; overflow-y: auto;">
+                                        <table class="table table-bordered">
+                                            <thead>
+                                                <tr>
+                                                    <th>Requirement</th>
+                                                    <th>Quantity</th>
+                                                    <th>Price</th>
+                                                    <th>Amount</th>
+                                                    <th>Description</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="modalRequirements">
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                                
+                                <!-- <td data-has-query="{{ approval.request.has_query|default:0 }}">
+                                    {{ approval.request.has_query }}
+                                </td> -->
+                                <br>
+                                <h6>Attached Document</h6>
+                                <p>
+                                    <a id="modal-document-link" href="#" target="_blank" class="btn btn-outline-primary">
+                                        View Document
+                                    </a>
+                                </p>
+
+                                <div id="approvalQueryDocumentsSection" class="d-none">
+                                    <h6>Query Documents</h6>
+                                    <div id="approval-query-doc-buttons" class="d-flex flex-wrap gap-2"></div>
+                                </div>
+                                <br>
+
+                                <h6 id="QueryReplyTitle"><strong>Query Reply</strong></h6>
+                                <p id="query-reply" class="border p-2 bg-light">No reply provided yet.</p>
+                                <!-- new -->
+                                 <!-- query update -->
+                                <h6 id="queryUpdatesTitle" class="d-none">Updates</h6>
+                                <ul id="queryUpdatesList" class="list-group mb-3 d-none"></ul>
+
+                                <div id="approvalActionArea">
+                                <label for="approval-comments" class="form-label">Add comments</label>
+                                <textarea class="form-control" id="approval-comments" rows="3" placeholder="Enter your comment..." required></textarea>
+                                <br>
+                
+                                <!-- <div class="modal-footer"> -->
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                    <!-- <button id="submitQuery" class="btn btn-warning">Submit Query</button> -->
+                                    <button type="submit" class="btn btn-danger reject-btn">
+                                        <span class="btn-text">Reject</span>
+                                        <span class="spinner-border spinner-border-sm d-none ms-2" role="status" aria-hidden="true"></span>
+                                    </button>  
+                                    <button type="submit" class="btn btn-success approve-btn">
+                                        <span class="btn-text">Approve</span>
+                                        <span class="spinner-border spinner-border-sm d-none ms-2" role="status" aria-hidden="true"></span>
+                                    </button>                              
+                                </div>
+                                <div id="querySection" class="d-none mt-3">
+                                    <input type="hidden" id="modal-approval-id" value="{{ approval.id }}">
+                                    <!-- <input type="hidden" id="modal-doc-id" value="{{ approval.request.id }}"> -->
+                                    <!-- <p><strong>Document ID:</strong> <span id="modal-doc-id"></span></p> -->
+                                    <label for="queryComment" class="form-label">Submit Query</label>
+                                    <textarea id="queryComment" class="form-control" rows="3" placeholder="Enter your query..."></textarea>
+                                    <div class="mt-2">
+                                    <!-- <button type="button" class="btn btn-warning submit-query-btn">Submit Query</button> -->
+                                    <!-- <button class="btn btn-warning query-btn" 
+                                        data-approval-id="{{ approval.id }}" 
+                                        data-has-query="{{ approval.request.has_query }}">
+                                        Query
+                                    </button> -->
+                                    <button class="btn btn-warning submit-query-btn" 
+                                        data-approval-id="{{ approval.id }}" 
+                                        data-has-query="{{ approval.request.has_query }}">
+                                        Submit Query
+                                    </button>
+
+                                    <button type="button" class="btn btn-secondary cancel-query-btn">Cancel</button>
+                                    </div>
+                                </div>
+                                <div class="mt-3">
+                                    <!-- <button type="button" id="toggleQuerySection" class="btn btn-info">Have a query?</button> -->
+                                    <button type="button" id="toggleQuerySection" class="btn btn-info" 
+                                    data-has-query="{{ approval.request.has_query }}">Have a query?</button>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    <!-- Modal for Reviewing Approval data-approver-id="{{approval_id}}"-->
+
+
+</main>
+<script>
+    // document.querySelectorAll(".open-approval-modal").forEach(button => {
+    // button.addEventListener("click", function () {
+    //     let approvalId = this.getAttribute("data-approval-id");  // Fetch approval ID correctly
+    //     console.log("Clicked Review Button - Approval ID:", approvalId);
+    document.addEventListener("DOMContentLoaded", function () {
+    console.log("🚀 Script Loaded for Approval List!");
+    console.log(1)
+    // ✅ Use event delegation for dynamically added elements
+    document.body.addEventListener("click", function (event) {
+        if (event.target.classList.contains("open-approval-modal")) {
+            event.preventDefault();
+            
+            let approvalId = event.target.getAttribute("data-approval-id");
+            console.log("📩 Review Button Clicked - Approval ID:", approvalId);
+
+        fetch(`/get_approval_details/${approvalId}/`)  // Ensure this uses approval_id
+            .then(response => response.json())
+            .then(data => {
+                console.log("Received Data:", data);
+                if (data.error) {
+                    alert("Error: " + data.error);
+                    return;
+                }console.log(2)
+                document.getElementById("query-reply").textContent = data.query_reply;
+                document.getElementById("modal-doc-id").textContent = data.doc_number || "N/A";
+                document.getElementById("modal-requester").textContent = data.created_by || "N/A";
+                document.getElementById("modal-description").textContent = data.description || "N/A";
+                document.getElementById("modal-status").textContent = data.status || "Pending";
+                document.getElementById("modal-approval-id").value = approvalId;
+
+                let highlightContainer = document.getElementById("modalHighlightPoints");
+                highlightContainer.innerHTML = "";
+                data.highlights.forEach(point => {
+                    let li = document.createElement("li");
+                    li.textContent = point;
+                    highlightContainer.appendChild(li);
+                });
+                console.log(3)
+                let requirementsContainer = document.getElementById("modalRequirements");
+                        requirementsContainer.innerHTML = "";
+                        data.requirements.forEach(req => {
+                            let shortDesc = req.description.length > 20 ? req.description.slice(0, 20) + "..." : req.description;
+                            let row = `
+                                <tr>
+                                    <td>${req.requirement_name}</td>
+                                    <td>${req.quantity}</td>
+                                    <td>${req.price}</td>
+                                    <td>${req.amount}</td>
+                                    <td>
+                                        <span class="short-text">${shortDesc}</span>
+                                        <span class="full-text d-none">${req.description}</span>
+                                        ${req.description.length > 20 ? '<button class="btn btn-link toggle-text">Read More</button>' : ''}
+                                    </td>
+                                </tr>
+                            `;
+                            requirementsContainer.innerHTML += row;
+                        });
+                
+                        console.log(4)
+                        // Add event listeners for Read More / Read Less
+                        setTimeout(() => {
+                            document.querySelectorAll(".toggle-text").forEach(button => {
+                                button.addEventListener("click", function () {
+                                    let shortText = this.previousElementSibling.previousElementSibling;
+                                    let fullText = this.previousElementSibling;
+
+                                    if (fullText.classList.contains("d-none")) {
+                                        fullText.classList.remove("d-none");
+                                        shortText.classList.add("d-none");
+                                        this.textContent = "Read Less";
+                                    } else {
+                                        fullText.classList.add("d-none");
+                                        shortText.classList.remove("d-none");
+                                        this.textContent = "Read More";
+                                    }
+                                });
+                            });
+                        }, 100);
+                        console.log(5)
+                    let queryUpdatesContainer = document.getElementById("queryUpdatesList");
+                    console.log(6)
+                    let queryUpdatesTitle = document.getElementById("queryUpdatesTitle");
+                    console.log(7)
+                    if (!queryUpdatesContainer || !queryUpdatesTitle) {
+                        console.error("⚠️ queryUpdatesList or queryUpdatesTitle not found in DOM!");
+                        return;  // ✅ Stop execution if elements are missing
+                    }
+                    console.log(8)
+                    queryUpdatesContainer.innerHTML = "";
+                    console.log(9)
+                    if (Array.isArray(data.query_updates) && data.query_updates.length > 0) {
+                        console.log(10)
+                        queryUpdatesTitle.classList.remove("d-none");
+                        console.log(11)
+                        queryUpdatesContainer.classList.remove("d-none");
+                        console.log(12)
+                        data.query_updates.forEach(update => {
+                            let li = document.createElement("li");
+                            li.className = "list-group-item";
+                            li.innerHTML = `<strong>${update.field_name}:</strong> ${update.old_value} → ${update.new_value}`;
+                            queryUpdatesContainer.appendChild(li);
+                        });
+                    } else {
+                        queryUpdatesTitle.classList.add("d-none");
+                        queryUpdatesContainer.classList.add("d-none");
+                    }
+                
+                let docLink = document.getElementById("modal-document-link");
+                if (data.document_url) {
+                    docLink.href = data.document_url;
+                    docLink.textContent = "View Document";
+                    docLink.classList.remove("d-none");  // ✅ Show the button
+                } else {
+                    docLink.href = "#";
+                    docLink.textContent = "No Document Attached";
+                    docLink.classList.add("d-none");  // ✅ Hide the button if no document
+                }
+
+                let previousApproversContainer = document.getElementById("modalPreviousApprovers");
+                        let previousApproversTitle = document.getElementById("previousApproversTitle");
+
+                        previousApproversContainer.innerHTML = "";
+                        if (data.previous_approvers.length > 0) {
+                            data.previous_approvers.forEach(name => {
+                                let li = document.createElement("li");
+                                li.textContent = name;
+                                previousApproversContainer.appendChild(li);
+                            });
+                            previousApproversTitle.classList.remove("d-none"); // ✅ Show if approvers exist
+                        } else {
+                            previousApproversTitle.classList.add("d-none"); // ✅ Hide if no approvers
+                        }
+                let queryDocumentsContainer = document.getElementById("approval-query-doc-buttons");
+                        queryDocumentsContainer.innerHTML = "";
+                        if (data.query_documents.length > 0) {
+                            let queryDocSection = document.getElementById("approvalQueryDocumentsSection");
+                            if (queryDocSection) {
+                                queryDocSection.classList.remove("d-none");
+                            }                            
+                                data.query_documents.forEach(doc => {
+                                let btn = document.createElement("a");
+                                btn.href = doc.url;
+                                btn.target = "_blank";
+                                btn.className = "btn btn-outline-primary";
+                                btn.textContent = "View Document"
+                                queryDocumentsContainer.appendChild(btn);
+                            });
+                        } else {
+                            document.getElementById("approvalQueryDocumentsSection").classList.add("d-none");
+                        }
+                // let approverListContainer = document.getElementById("modalPreviousApprovers");
+                //         approverListContainer.innerHTML = "";
+
+                //         data.previous_approvers.forEach(name => {
+                //             let li = document.createElement("li");
+                //             li.textContent = name;
+                //             approverListContainer.appendChild(li);
+                //         });
+                    
+                let modalElement = document.getElementById("approvalModal");
+                if (!modalElement) {
+                    console.error("Modal element not found!");
+                    return;
+                }
+
+                let modal = new bootstrap.Modal(modalElement);
+                modal.show();
+            })
+            .catch(error => console.error("Error fetching approval details:", error));
+        }
+    });
+});
+    // Function to get CSRF token for AJAX requests
+
+document.addEventListener("DOMContentLoaded", function () {
+    document.querySelectorAll(".approve-btn, .reject-btn").forEach(button => {
+        button.addEventListener("click", function () {
+            let action = this.classList.contains("approve-btn") ? "approve" : "reject";
+            let approvalId = document.getElementById("modal-approval-id").value;
+            let comments = document.getElementById("approval-comments").value;
+            
+            if (!comments) {
+                Swal.fire({
+                    title: "Error",
+                    text: "Please enter a comment before proceeding.",
+                    icon: "error",
+                    confirmButtonText: "OK"
+                });
+                return; // ❌ Prevent submission
+            }
+            // ✅ Show SweetAlert Loading
+            Swal.fire({
+                title: action === "approve" ? "Approving..." : "Rejecting...",
+                text: "Please wait while we process your request.",
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+
+            // ✅ Create a hidden form for submission
+            let form = document.createElement("form");
+            form.method = "POST";
+            form.action = "/submit_approval/";
+            form.style.display = "none";
+
+            let csrfInput = document.createElement("input");
+            csrfInput.type = "hidden";
+            csrfInput.name = "csrfmiddlewaretoken";
+            csrfInput.value = document.querySelector("[name=csrfmiddlewaretoken]").value;
+            form.appendChild(csrfInput);
+
+            let approvalInput = document.createElement("input");
+            approvalInput.type = "hidden";
+            approvalInput.name = "approval_id";
+            approvalInput.value = approvalId;
+            form.appendChild(approvalInput);
+
+            let actionInput = document.createElement("input");
+            actionInput.type = "hidden";
+            actionInput.name = "action";
+            actionInput.value = action;
+            form.appendChild(actionInput);
+
+            let commentsInput = document.createElement("input");
+            commentsInput.type = "hidden";
+            commentsInput.name = "comments";
+            commentsInput.value = comments;
+            form.appendChild(commentsInput);
+
+            document.body.appendChild(form);
+
+            // ✅ Submit form and show success message
+            setTimeout(() => {
+                form.submit();
+
+                Swal.fire({
+                    title: "Success!",
+                    text: action === "approve" ? "Request has been approved!" : "Request has been rejected!",
+                    icon: "success",
+                    confirmButtonText: "OK"
+                }).then(() => {
+                    location.reload();  // ✅ Reload page after success
+                });
+            }, 1500);  // ✅ Delay for smooth experience
+        });
+    });
+});
+//semi working
+// document.addEventListener("DOMContentLoaded", function () {
+//     // Toggle Query Section inside Approval Modal
+//     const toggleQueryBtn = document.getElementById("toggleQuerySection");
+//     const querySection = document.getElementById("querySection");
+//     const approvalActionArea = document.getElementById("approvalActionArea");
+//     const submitQueryBtn = document.querySelector(".submit-query-btn");
+//     const cancelQueryBtn = document.querySelector(".cancel-query-btn");
+//     const approvalId = document.getElementById("modal-approval-id")?.value;
+    
+//     function isQuerySubmitted(approvalId) { 
+//         let submittedQueries = JSON.parse(localStorage.getItem("submittedQueries")) || [];
+//         return submittedQueries.includes(approvalId);
+//     }
+
+//     // Function to mark query as submitted
+//     function markQuerySubmitted(approvalId) {
+//         let submittedQueries = JSON.parse(localStorage.getItem("submittedQueries")) || [];
+//         if (!submittedQueries.includes(approvalId)) {
+//             submittedQueries.push(approvalId);
+//             localStorage.setItem("submittedQueries", JSON.stringify(submittedQueries));
+//         }
+//     }
+
+//     // Disable the button if the query was already submitted
+//     if (toggleQueryBtn && approvalId && isQuerySubmitted(approvalId)) {
+//         toggleQueryBtn.disabled = true;
+//         toggleQueryBtn.textContent = "Query Raised";
+//         toggleQueryBtn.classList.add("btn-secondary");
+//     }
+
+//     if (toggleQueryBtn) {
+//         toggleQueryBtn.addEventListener("click", function () {
+//             if (toggleQueryBtn.disabled) return; // Prevent multiple clicks
+
+//             if (querySection.classList.contains("d-none")) {
+//                 // Show query section and hide approval actions
+//                 querySection.classList.remove("d-none");
+//                 approvalActionArea.classList.add("d-none");
+//                 toggleQueryBtn.textContent = "Cancel Query";
+//             } else {
+//                 // Hide query section and show approval actions
+//                 querySection.classList.add("d-none");
+//                 approvalActionArea.classList.remove("d-none");
+//                 toggleQueryBtn.textContent = "Have a query?";
+//             }
+//         });
+//     }
+
+//     if (submitQueryBtn) {
+//         submitQueryBtn.addEventListener("click", function () {
+//             const queryText = document.getElementById("queryComment").value.trim();
+//             const approvalId = document.getElementById("modal-approval-id").value;
+//             // const docId = document.getElementById("modal-req-id").value;
+//             // document.getElementById("modal-doc-id").textContent = data.doc_number || "N/A";
+
+//             if (!queryText) {
+//                 Swal.fire("Error", "Query cannot be empty!", "error");
+//                 return;
+//             }
+//             if (!approvalId) {
+//                 Swal.fire("Error", "Missing approval", "error");
+//                 return;
+//             }
+//             Swal.fire({
+//                 title: "Submitting Query...",
+//                 text: "Please wait while we process your query.",
+//                 allowOutsideClick: false,
+//                 didOpen: () => {
+//                     Swal.showLoading();
+//                 }
+//             });
+
+//             // Send query via AJAX
+//             fetch("/submit_query/", {
+//                 method: "POST",
+//                 headers: {
+//                     "Content-Type": "application/json",
+//                     "X-CSRFToken": document.querySelector("[name=csrfmiddlewaretoken]").value
+//                 },
+//                 body: JSON.stringify({
+//                     approval_id: approvalId,
+//                     query_comment: queryText
+//                 })
+//             })
+//             .then(response => response.json())
+//             .then(data => {
+//                 if (data.success) {
+//                     Swal.fire("Success", "Your query has been submitted!", "success")
+//                         .then(() => {
+//                             document.getElementById("queryComment").value = "";
+//                             querySection.classList.add("d-none");
+//                             approvalActionArea.classList.remove("d-none");
+//                             toggleQueryBtn.textContent = "Query Raised?";
+//                             toggleQueryBtn.disabled = true;
+//                             toggleQueryBtn.classList.add("btn-secondary"); 
+//                             // document.querySelectorAll(`.submit-query-btn[data-approval-id="${approvalId}"]`).forEach(btn => {
+//                             // btn.disabled = true;
+//                             // btn.classList.add("btn-secondary"); // Change color to indicate it's disabled
+//                             // btn.textContent = "Query Raised";  // Update button text
+//                         // });
+
+//                         location.reload();
+//                         });
+//                 } else {
+//                     Swal.fire("Error", data.error || "Failed to submit query!", "error");}})
+//             .catch(error => {
+//                 console.error("Error submitting query:", error);
+//                 Swal.fire("Error", "Failed to submit query!", "error");});});}
+//     if (cancelQueryBtn) {
+//         cancelQueryBtn.addEventListener("click", function () {
+//             document.getElementById("queryComment").value = "";
+//             querySection.classList.add("d-none");
+//             approvalActionArea.classList.remove("d-none");
+//             toggleQueryBtn.textContent = "Have a query?";});}});
+
+document.addEventListener("DOMContentLoaded", function () {
+    // Toggle Query Section inside Approval Modal
+    const toggleQueryBtn = document.getElementById("toggleQuerySection");
+    const querySection = document.getElementById("querySection");
+    const approvalActionArea = document.getElementById("approvalActionArea");
+    const submitQueryBtn = document.querySelector(".submit-query-btn");
+    const cancelQueryBtn = document.querySelector(".cancel-query-btn");
+    const approvalIdEl = document.getElementById("modal-approval-id");
+    const approvalId = approvalIdEl ? approvalIdEl.value : null;
+    const queryButton = document.getElementById("toggleQuerySection");
+    
+    // Function to check if a query for this approval has already been submitted
+    function isQuerySubmitted(approvalId) { 
+        let submittedQueries = JSON.parse(localStorage.getItem("submittedQueries")) || [];
+        return submittedQueries.includes(approvalId);
+    }
+
+    // Function to mark query as submitted in local storage
+    function markQuerySubmitted(approvalId) {
+        let submittedQueries = JSON.parse(localStorage.getItem("submittedQueries")) || [];
+        if (!submittedQueries.includes(approvalId)) {
+            submittedQueries.push(approvalId);
+            localStorage.setItem("submittedQueries", JSON.stringify(submittedQueries));
+        }
+    }
+
+    // Disable the "Have a query?" button if a query has already been submitted for this approval
+    if (toggleQueryBtn && approvalId && isQuerySubmitted(approvalId)) {
+        toggleQueryBtn.disabled = true;
+        toggleQueryBtn.textContent = "Query Raised";
+        toggleQueryBtn.classList.add("btn-secondary");
+    }
+
+    // Toggle the query section when clicking the "Have a query?" button
+    if (toggleQueryBtn) {
+        toggleQueryBtn.addEventListener("click", function () {
+            let hasQuery = queryButton.getAttribute("data-has-query");
+            console.log("🚀 has_query value:", hasQuery);  // ✅ Debugging
+
+            if (hasQuery === null || hasQuery === "null") {
+                console.warn("⚠ has_query is NULL! Setting default to 0.");
+                // hasQuery = "0";  // ✅ Set default value
+            }
+
+            if (hasQuery === "1") {
+                Swal.fire("Error", "Query already raised. Please wait for the requester to respond.", "error");
+            } else if (hasQuery === "2") {
+                Swal.fire("Error", "Query already resolved. You cannot raise another query.", "error");
+            }
+
+            if (toggleQueryBtn.disabled) return; // Prevent action if already disabled
+
+            if (querySection.classList.contains("d-none")) {
+                // Show query section and hide approval actions
+                querySection.classList.remove("d-none");
+                approvalActionArea.classList.add("d-none");
+                toggleQueryBtn.textContent = "Cancel Query";
+            } else {
+                // Hide query section and show approval actions
+                querySection.classList.add("d-none");
+                approvalActionArea.classList.remove("d-none");
+                toggleQueryBtn.textContent = "Have a query?";
+            }
+        });
+    }
+    if (queryButton) {
+        let hasQuery = queryButton.getAttribute("data-has-query");
+        console.log("🚀 has_query value:", hasQuery);  // ✅ Debugging
+
+        if (hasQuery === null || hasQuery === "null") {
+            console.warn("⚠ has_query is NULL! Setting default to 0.");
+            // hasQuery = "0";  // ✅ Set default value
+        }
+
+        if (hasQuery === "1") {
+            Swal.fire("Error", "Query already raised. Please wait for the requester to respond.", "error");
+        } else if (hasQuery === "2") {
+            Swal.fire("Error", "Query already resolved. You cannot raise another query.", "error");
+        }
+    }
+
+    // Handle query submission via AJAX
+    if (submitQueryBtn) {
+        submitQueryBtn.addEventListener("click", function () {
+            const queryText = document.getElementById("queryComment").value.trim();
+            const currentApprovalId = document.getElementById("modal-approval-id").value;
+            // const hasQuery = document.getElementById("model-has-query");
+
+            if (!queryText) {
+                Swal.fire("Error", "Query cannot be empty!", "error");
+                return;
+            }
+            if (!currentApprovalId) {
+                Swal.fire("Error", "Missing approval", "error");
+                return;
+            }
+            // console.log(hasQuery)
+            // console.log("above is hasquery")
+            // if (hasQuery === "1") {
+            //     Swal.fire("Error", "Query already raised. Please wait for the requester to respond.", "error");
+            //     return;
+            // } else if (hasQuery === "2") {
+            //     Swal.fire("Error", "Query already resolved. You cannot raise another query.", "error");
+            //     return;
+            // }
+
+            Swal.fire({
+                title: "Submitting Query...",
+                text: "Please wait while we process your query.",
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+
+            // Send the query via AJAX
+            fetch("/submit_query/", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": document.querySelector("[name=csrfmiddlewaretoken]").value
+                },
+                body: JSON.stringify({
+                    approval_id: currentApprovalId,
+                    query_comment: queryText
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Mark this approval as queried in local storage
+                    markQuerySubmitted(currentApprovalId);
+                    Swal.fire("Success", "Your query has been submitted!", "success")
+                        .then(() => {
+                            // Reset query input and UI
+                            document.getElementById("queryComment").value = "";
+                            querySection.classList.add("d-none");
+                            approvalActionArea.classList.remove("d-none");
+                            // Disable the button so it can't be clicked again
+                            toggleQueryBtn.textContent = "Query Raised";
+                            toggleQueryBtn.disabled = true;
+                            toggleQueryBtn.classList.add("btn-secondary");
+                            location.reload();
+                        });
+                } else {
+                    Swal.fire("Error", data.error || "Failed to submit query!", "error");
+                }
+            })
+            .catch(error => {
+                console.error("Error submitting query:", error);
+                Swal.fire("Error", "Failed to submit query!", "error");
+            });
+        });
+    }
+
+    // Handle canceling the query
+    if (cancelQueryBtn) {
+        cancelQueryBtn.addEventListener("click", function () {
+            document.getElementById("queryComment").value = "";
+            querySection.classList.add("d-none");
+            approvalActionArea.classList.remove("d-none");
+            toggleQueryBtn.textContent = "Have a query?";
+        });
+    }
+}
+);
+
+
+document.addEventListener("DOMContentLoaded", function () {
+    document.getElementById("requirementSearch").addEventListener("keyup", function () {
+        let filter = this.value.toLowerCase();
+        let rows = document.querySelectorAll("#modalRequirements tr");
+
+        rows.forEach(row => {
+            let text = row.innerText.toLowerCase();
+            row.style.display = text.includes(filter) ? "" : "none";});});});
+
+//             document.addEventListener("DOMContentLoaded", function () {
+//     document.querySelectorAll(".open-approval-modal").forEach(button => {
+//         button.addEventListener("click", function () {
+//             let approvalId = this.getAttribute("data-approval-id");
+
+//             fetch(`/get_approval_details/${approvalId}/`)
+//                 .then(response => response.json())
+//                 .then(data => {
+//                     document.getElementById("modal-doc-id").textContent = data.doc_number;
+//                     document.getElementById("modal-document-link").href = data.document_url;
+
+//                     let queryDocsList = document.getElementById("queryDocumentsList");
+//                     queryDocsList.innerHTML = "";
+//                     data.query_documents.forEach(doc => {
+//                         let li = document.createElement("li");
+//                         li.innerHTML = `<button class="btn btn-outline-primary"><a href="${doc.url}" target="_blank">view Document</a></button>`;
+
+//                         queryDocsList.appendChild(li);
+//                     });
+//                     // next
+//                     // let queryDocsList = document.getElementById("queryDocumentsList");
+//                     // queryDocsList.innerHTML = "";
+                    
+//                     // data.query_documents.forEach(doc => {
+//                     //     let li = document.createElement("li");
+//                     //     let link = document.createElement("a");
+
+//                     //     link.href = doc.url;
+//                     //     link.target = "_blank";
+//                     //     link.textContent = "View Document";
+//                     //     link.classList.add("btn", "btn-outline-primary");
+
+//                     //     li.appendChild(link);
+//                     //     queryDocsList.appendChild(li);
+//                     // });
+//                     // let queryDocsList = document.getElementById("queryDocumentsList");
+//                     // queryDocsList.innerHTML = "";
+                    
+//                     // data.query_documents.forEach(doc => {
+//                     //     let li = document.createElement("li");
+//                     //     let link = document.createElement("a");
+
+//                     //     link.href = doc.url;
+//                     //     link.target = "_blank"; // Opens in a new tab
+//                     //     link.rel = "noopener noreferrer"; // Security best practice
+//                     //     link.textContent = "View Document";
+//                     //     link.classList.add("btn", "btn-outline-primary");
+
+//                     //     li.appendChild(link);
+//                     //     queryDocsList.appendChild(li);
+//                     // });
+
+//                     new bootstrap.Modal(document.getElementById("approvalModal")).show();
+//                 })
+//                 .catch(error => console.error("Error fetching approval details:", error));
+//         });
+//     });
+// });
+
+
+</script>
+{% endblock content %}

@@ -1,0 +1,878 @@
+{% extends 'main.html' %}
+{% block content %}
+
+<main id="main" class="main" style="margin-left: 300px; max-width: 75%;">
+  <style>
+    /* Limit height to 400px (adjust as needed) and enable vertical scrolling */
+    .scrollable {
+        max-height: 350px;
+        overflow-y: auto;
+    }
+  </style>
+  <div class="container">
+    <div class="pagetitle d-flex align-items-center justify-content-between">
+      <h1 class="card-title">Form Details / {{ form.doc_number }}</h1>
+    <div class="btn-group" role="group" aria-label="Navigation">
+      {% if next_form %}
+    <a href="{% url 'form_detail' next_form.id %}" class="btn btn-secondary">Prev</a>
+  {% else %}
+    <button class="btn btn-secondary" disabled>Prev</button>
+  {% endif %}
+  
+  <a href="{% url 'form_list' %}" class="btn btn-secondary">Back</a>
+  
+  {% if prev_form %}
+    <a href="{% url 'form_detail' prev_form.id %}" class="btn btn-secondary">Next</a>
+  {% else %}
+    <button class="btn btn-secondary" disabled>Next</button>
+  {% endif %}</div>
+        </div>
+  </div>
+
+  <section class="section">
+    <div class="card shadow-sm mb-4">
+      <div class="card-body">
+        <div class="row">
+          <!-- Left Column: Booking Information -->
+          <div class="col-md-6 border-end">
+            <br>
+            <h5 class="mb-3 text-primary">Booking Information</h5>
+            <table class="table table-borderless">
+              <tr>
+                <th>Document Number:</th>
+                <td>{{ form.doc_number }}</td>
+              </tr>
+              <tr>
+                <th>Invoice Value:</th>
+                <td>{{ form.invoice_value|floatformat:2 }}</td>
+              </tr>
+              <tr>
+                <th>Vendor Name:</th>
+                <td>{{ form.vendor_name }}</td>
+              </tr>
+              <tr>
+                <th>Reference Number:</th>
+                <td>{{ form.reference_number }}</td>
+              </tr>
+              <tr>
+                <th>Document Type:</th>
+                <td>
+                  {% if form.document_type %}
+                    {{ form.document_type.name }}
+                  {% else %}
+                    N/A
+                  {% endif %}
+                </td>
+              </tr>
+              <tr>
+                <th>Remarks:</th>
+                <td>{{ form.remarks|default:"-" }}</td>
+              </tr>
+              <tr>
+                <th>Special Instructions:</th>
+                <td>{{ form.special_instructions|default:"-" }}</td>
+              </tr>
+              <tr>
+                <th>Created At:</th>
+                <td>{{ form.created_at|date:"d M Y, H:i A" }}</td>
+              </tr>
+            </table>
+          </div>
+  
+          <!-- Right Column: Additional Info -->
+          <div class="col-md-6">
+            <br>
+
+            <h5 class="mb-3 text-primary">Additional Information</h5>
+            <table class="table table-borderless">
+              <tr>
+                <th>Assignees:</th>
+                <td>
+                  {% for assignee in form.assignees.all %}
+                    {{ assignee.username }}{% if not forloop.last %}, {% endif %}
+                  {% empty %}
+                    <span class="text-muted">None Assigned</span>
+                  {% endfor %}
+                </td>
+              </tr>
+              <tr>
+                <th>Status:</th>
+                <td>
+                  <!-- <span class="form-control-plaintext">{{ form.status }}</span> -->
+
+                  <!-- {% if request.user in form.assignees.all and form.status != "Closed" %}
+                    <button id="raiseQueryBtn" class="btn btn-warning btn-sm mt-2">Submit Query</button>
+                  {% endif %}  -->
+                  {% if request.user in form.assignees.all %}
+                    <form method="post">
+                      {% csrf_token %}
+                      <select name="status" class="form-select form-select-sm">
+                        <option value="In Progress" {% if form.status == "In Progress" %}selected{% endif %}>In Progress</option>
+                        <option value="Raise Query" {% if form.status == "Raise Query" %}selected{% endif %}>Raise Query</option>
+                        <option value="Validation" {% if form.status == "Validation" %}selected{% endif %}>Only Emp Validation</option>
+                        <option value="Validation In Progress" {% if form.status == "Validation In Progress" %}selected{% endif %}>Emp Validation</option>
+                        <option value="Client Validation" {% if form.status == "Client Validation" %}selected{% endif %}>Client Validation</option>
+                        <option value="Closed" {% if form.status == "Closed" %}selected{% endif %}>Closed</option>
+                      </select>
+                      <button type="submit" class="btn btn-success btn-sm mt-2">Update</button>
+                    </form>
+                  {% else %}
+                    <span class="form-control-plaintext">{{ form.status }}</span>
+                  {% endif %}
+                </td>
+              </tr>
+              <tr>
+                <th>Documents:</th>
+                <td>
+                  {% if form.documents.all %}
+                    <ul class="list-unstyled">
+                      {% for document in form.documents.all %}
+                        <li>
+                          <a href="{{ document.file.url }}" target="_blank" class="text-decoration-none" title="{{ document.file.name|cut:'documents/' }}">
+                            {% with document.file.name|cut:"documents/" as fname %}
+                              {% if fname|length > 30 %}
+                                {{ fname|slice:":30" }}...
+                              {% else %}
+                                {{ fname }}
+                              {% endif %}
+                            {% endwith %}
+                          </a>
+                        </li>
+                      {% endfor %}
+                    </ul>
+                  {% else %}
+                    <span class="text-muted">No Documents Uploaded</span>
+                  {% endif %}
+                </td>
+              </tr>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+  
+        <!-- Button Group: Edit & History -->
+        <div aria-label="Edit and History">
+          {% if show_resolve_button and request.user == form.created_by %}
+            <button class="btn btn-warning" type="button" data-bs-toggle="collapse" data-bs-target="#resolveQueryCollapse" aria-expanded="false" aria-controls="resolveQueryCollapse">
+              Resolve Query
+            </button>
+          {% elif request.user == form.created_by %}
+            <button class="btn btn-primary" type="button" data-bs-toggle="collapse" data-bs-target="#editFormCollapse" aria-expanded="false" aria-controls="editFormCollapse">
+              Edit
+            </button>
+          {% elif request.user in form.assignees.all and form.status == "In Progress" %}
+            <button class="btn btn-primary" type="button" data-bs-toggle="collapse" data-bs-target="#referenceCollapse" aria-expanded="false" aria-controls="referenceCollapse" id="addReferenceBtn">
+              Add Reference
+            </button>
+          {% endif %}
+          <button class="btn btn-info" type="button" data-bs-toggle="collapse" data-bs-target="#historyCollapse" aria-expanded="false" aria-controls="historyCollapse">
+            History
+          </button>
+          <button class="btn btn-primary" type="button" data-bs-toggle="collapse" data-bs-target="#queryHistory">
+            Query History
+          </button>
+          {% if request.user in form.assignees.all and form.status == "Raise Query" %}
+          <button class="btn btn-primary" type="button" data-bs-toggle="collapse" data-bs-target="#queryCollapse" aria-expanded="false" aria-controls="queryCollapse">
+            Add Query Comment
+          </button>
+          {% endif %}
+          <br>
+          
+          <!-- <button class="btn btn-primary" type="button" data-bs-toggle="collapse" data-bs-target="#queryCollapse" aria-expanded="false" aria-controls="queryCollapse">
+            Raise Query
+          </button> -->
+          
+          <!-- <div>
+            {% if show_resolve_button %}
+            <button class="btn btn-warning mt-3" type="button" data-bs-toggle="collapse" data-bs-target="#resolveQueryCollapse" aria-expanded="false" aria-controls="resolveQueryCollapse">
+              Resolve Query
+            </button>
+            {% endif %}
+          </div> -->
+          
+        </div>
+        <br>
+        {% if form.status == "Validation" and request.user == form.validator %}
+            <form method="post" action="{% url 'close_document' form.id %}">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-primary">Close Document</button>
+            </form>
+          {% elif form.status == "Validation In Progress" and request.user == form.validator %}
+            <!-- Button for the assigned validator to trigger client validation -->
+            <form method="post" action="{% url 'client_validate_both' form.id %}">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-primary">Client Validation</button>
+            </form>
+          {% elif form.status == "Client Validation" and request.user == form.created_by %}
+            <!-- Button for the client to close the document -->
+            <form method="post" action="{% url 'close_document_both' form.id %}">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-primary">Close Document</button>
+            </form>
+        {% endif %}
+        <p>
+
+          <!-- Modal for Selecting Validator -->
+
+
+
+        <!-- Modal for selecting a validator (Validation 1) -->
+        <!-- Collapsible Edit Form -->
+        <div class="collapse" id="editFormCollapse">
+          <div class="card card-body">
+            <form method="POST" action="{% url 'update_form' form.id %}" enctype="multipart/form-data">
+              {% csrf_token %}
+              <div class="row">
+                <div class="col-md-4">
+                  <label for="vendor_name" class="form-label">Vendor Name</label>
+                  <input type="text" id="vendor_name" name="vendor_name" value="{{ form.vendor_name }}" class="form-control">
+                </div>
+                <div class="col-md-4">
+                  <label for="invoice_value" class="form-label">Invoice Value</label>
+                  <input type="text" id="invoice_value" name="invoice_value" value="{{ form.invoice_value }}" class="form-control">
+                </div>
+              </div>
+              <div class="row mt-3">
+                <!-- <div class="col-md-4">
+                  <label for="taxable_value" class="form-label">Taxable Value</label>
+                  <input type="text" id="taxable_value" name="taxable_value" value="{{ form.taxable_value }}" class="form-control">
+                </div> -->
+                <div class="col-md-4">
+                  <label for="document_type" class="form-label">Document Type</label>
+                    <select name="document_type" class="form-control mb-2" required>
+                      <option value="">Select Document Type</option>
+                      {% for dt in document_types %}
+                        <option value="{{ dt.id }}" {% if form.document_type and form.document_type.id == dt.id %}selected{% endif %}>
+                          {{ dt.name }}
+                        </option>
+                      {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-4">
+                  <label for="special_instructions" class="form-label">Special Instruction</label>
+                  <input type="text" id="special_instructions" name="special_instructions" value="{{ form.special_instructions }}" class="form-control">
+                </div>
+              </div>
+              <div class="row mt-3">
+                <div class="col-md-4">
+                  <label for="remarks" class="form-label">Remarks</label>
+                  <input type="text" id="remarks" name="remarks" value="{{ form.remarks }}" class="form-control">
+                </div>
+                <div class="col-md-4">
+                  <label for="documents" class="form-label">Document</label>
+                  <input type="file" name="documents" id="documents" class="form-control" multiple>
+                </div>
+                <br>
+                <div class="col-md-4 d-flex align-items-end">
+                    <button type="submit" class="btn btn-success w-100">Save Changes</button>
+                </div>
+                
+              </div>
+              
+            </form>
+          </div>
+        </div>
+
+        <div class="collapse mt-3" id="referenceCollapse">
+          <div class="card card-body">
+              <h5 class="card-title">Enter Reference Number</h5>
+              <form id="addReferenceForm" method="POST" action="{% url 'add_reference' form.id %}">
+                  {% csrf_token %}
+                  <div class="mb-3">
+                      <label for="referenceNumber" class="form-label">Reference Number:</label>
+                      <input type="text" name="reference_number" id="referenceNumber" class="form-control" value="{{ form.reference_number }}" required>
+                  </div>
+                  <button type="submit" class="btn btn-success">Submit</button>
+              </form>
+          </div>
+      </div>
+      
+
+        <!-- Collapsible History Section -->
+        <div class="collapse" id="historyCollapse">
+          <div class="card card-body scrollable">
+            <br><br>
+            <h4>Update History</h4>
+            {% if update_history %}
+              <ul class="list-group">
+                {% for log in update_history %}
+                  <li class="list-group-item">
+                    <strong>{{ log.field_name }}:</strong> {{ log.old_value|cut:"documents/" }} &rarr; {{ log.new_value }}<br>
+                    <small class="text-muted">
+                      Updated by: {{ log.updated_by.username }},Updated at: {{ log.updated_at|date:"d M Y, H:i A" }}
+                    </small><br>
+                    <!-- <small class="text-muted">
+                      
+                    </small> -->
+                  </li>
+                {% endfor %}
+              </ul>
+            {% else %}
+              <p class="text-muted">No updates have been made yet.</p>
+            {% endif %}
+          </div>
+        </div>
+        </p>    
+        </div>
+        <div>
+          
+        
+        <div class="collapse mt-3" id="queryHistory">
+          <div class="card card-body scrollable">
+            <br><br>
+              <h4>Query History</h4>
+              {% for query in query_history %}
+                  <div class="border p-2 mb-2">
+                      <p><strong>Query by:</strong> {{ query.assignee }}</p>
+                      <p><strong>Query Comment:</strong> {{ query.query_comment }}</p>
+                      {% if query.documents.all %}
+                      <p><strong>Attached Documents:</strong></p>
+                      <ul>
+                          {% for doc in query.documents.all %}
+                              <li><a href="{{ doc.file.url }}" target="_blank">{{ doc.file.name|cut:"query_documents/" }}</a></li>
+                          {% endfor %}
+                      </ul>
+                      {% endif %}
+                      {% if query.updated_fields.items %}
+                      <p><strong>Updated Fields:</strong></p>
+                      <ul>
+                          {% for field, change in query.updated_fields.items %}
+                              <li>{{ field }}: {{ change|cut:"documents/" }}</li>
+                          {% endfor %}
+                      </ul>
+                      {% endif %}
+                      {% if query.resolution_comment %}
+                      <p><strong>Resolution Comment:</strong> {{ query.resolution_comment }}</p>
+                      {% endif %}
+                      {% if query.updated_by != None %}
+                      <p><small>Resolved by {{ query.updated_by }} on {{ query.resolved_at }}</small></p>
+                      {% else %}
+                      <p><small>updated on {{ query.resolved_at }}</small></p>
+                      {% endif %}
+                  </div>
+              {% empty %}
+                  <p>No query history available.</p>
+              {% endfor %}
+          </div>
+      </div>
+        </div>
+        <div>
+        <!-- {% if request.user in form.assignees.all and form.status == "Raise Query" %}
+        <button class="btn btn-primary mt-3" type="button" data-bs-toggle="collapse" data-bs-target="#queryCollapse" aria-expanded="false" aria-controls="queryCollapse">
+          Add Query Comment
+        </button> -->
+        <div class="collapse mt-3" id="queryCollapse">
+          <div class="card card-body">
+            <form method="post" id="submitQueryForm" action="{% url 'add_query' form.id %}" enctype="multipart/form-data">
+              {% csrf_token %}
+              <div class="mb-3">
+                <label for="queryComment" class="form-label">Query Comment:</label>
+                <textarea id="queryComment" name="query_comment" class="form-control" rows="3" ></textarea>
+              </div>
+              <div class="mb-3">
+                <label for="query_documents" class="form-label">Attach Documents</label>
+                <input type="file" class="form-control" name="query_documents" multiple>
+            </div>    
+            <button type="submit" class="btn btn-success">Submit Query</button>
+            </form>
+          </div>
+        </div>
+      <!-- {% endif %} -->
+      </div>
+      
+
+          <div class="collapse mt-3" id="resolveQueryCollapse">
+              <form method="POST" id="resolveQueryForm" action="{% url 'resolve_query' form.id %}" enctype="multipart/form-data">
+                  {% csrf_token %}
+                  <div class="card card-body">
+                    <h5>Query from Assignee:</h5>
+                    <p>{{ latest_query.query_comment }}</p>
+                  
+                    <h5>Edit Fields:</h5>
+                    <label for="vendor_name" class="form-label">Vendor Name</label>
+                    <input type="text" name="vendor_name" class="form-control mb-2" value="{{ form.vendor_name }}" placeholder="Vendor Name">
+                  
+                    <label for="invoice_value" class="form-label">Invoice Value</label>
+                    <input type="number" step="0.01" name="invoice_value" class="form-control mb-2" value="{{ form.invoice_value }}" placeholder="Invoice Value">
+                  
+                    <!-- New Field: Document Type -->
+                    <label for="document_type" class="form-label">Document Type</label>
+                    <select name="document_type" class="form-control mb-2" required>
+                      <option value="">Select Document Type</option>
+                      {% for dt in document_types %}
+                        <option value="{{ dt.id }}" {% if form.document_type and form.document_type.id == dt.id %}selected{% endif %}>
+                          {{ dt.name }}
+                        </option>
+                      {% endfor %}
+                    </select>
+                  
+                    <!-- New Field: Remarks -->
+                    <label for="remarks" class="form-label">Remarks</label>
+                    <textarea name="remarks" class="form-control mb-2" placeholder="Enter remarks">{{ form.remarks }}</textarea>
+                  
+                    <!-- New Field: Special Instructions -->
+                    <label for="special_instructions" class="form-label">Special Instructions</label>
+                    <textarea name="special_instructions" class="form-control mb-2" placeholder="Enter special instructions">{{ form.special_instructions }}</textarea>
+                  
+                    <!-- File Upload -->
+                    <label for="documents" class="form-label">Upload New Documents</label>
+                    <input type="file" name="documents" class="form-control mb-2" multiple>
+                  
+                    <h5>Resolution Comment:</h5>
+                    <textarea name="resolution_comment" class="form-control mb-2" placeholder="Enter your resolution comment"></textarea>
+                  
+                    <button type="submit" class="btn btn-success">Submit Resolution</button>
+                  </div>
+                  
+              </form>
+          </div>
+        {% if form.reference_number is not None and form.status == "In Progress" and request.user in form.assignees.all %}
+          {% if validation_process == "Validation 1" %}
+            <!-- For Validation 3, perhaps show a "Validate" button that triggers a modal which first shows the selected validator's info -->
+            <button id="validateBothBtn" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#resolveValidationModal">
+              Validate (both system and client)
+            </button>
+            {% elif form.status == "Validation In Progress" and request.user == form.validator %}
+              <!-- Button for the assigned validator to trigger client validation -->
+              <form method="post" action="{% url 'client_validate_both' form.id %}">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-primary">Client Validation</button>
+              </form>
+            {% elif form.status == "Client Validation" and request.user == form.created_by %}
+              <!-- Button for the client to close the document -->
+              <form method="post" action="{% url 'close_document' form.id %}">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-primary">Close Document</button>
+              </form>
+            {% elif validation_process == "Validation 2" %}
+              <!-- Client directly validates -->
+              <form method="post" action="{% url 'client_validate_form' form.id %}">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-primary">Validate(client)</button>
+              </form>
+              {% elif validation_process == "Validation 3" %}
+              <!-- Button to open modal for selecting validator -->
+              <button id="validateBtn" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#selectValidatorModal">
+                Validate (with in system)
+              </button>
+            
+            {% endif %}
+          {% endif %}
+
+          <div class="modal fade" id="resolveValidationModal" tabindex="-1" aria-labelledby="resolveValidationModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h5 class="modal-title" id="selectValidatorModalLabel">Select Validator</h5>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                  <form method="POST" action="{% url 'assign_validator_both' form.id %}">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                      <label for="validatorSelect" class="form-label">Select Validator:</label>
+                      <select id="validatorSelect" name="validator" class="form-select" required>
+                        <option value="">-- Select Validator --</option>
+                        {% for user in possible_validators %}
+                          <option value="{{ user.id }}">{{ user.username }}</option>
+                        {% endfor %}
+                      </select>
+                    </div>
+                    <button type="submit" class="btn btn-success">Assign Validator</button>
+                  </form>
+                </div>
+              </div>
+            </div>
+          </div>
+
+<!-- Modal for selecting a validator -->
+<div class="modal fade" id="selectValidatorModal" tabindex="-1" aria-labelledby="selectValidatorModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="selectValidatorModalLabel">Select Validator</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form method="POST" action="{% url 'validate_form' form.id %}">
+          {% csrf_token %}
+          <div class="mb-3">
+            <label for="validatorSelect" class="form-label">Select Validator:</label>
+            <select id="validatorSelect" name="validator" class="form-select" required>
+              <option value="">Select Validator</option>
+              {% for user in possible_validators %}
+                <option value="{{ user.id }}">{{ user.username }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <button type="submit" class="btn btn-success">Assign Validator</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+</main>
+<!-- Include Bootstrap JS (required for collapse functionality) -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const editBtn = document.querySelector("[data-bs-target='#editFormCollapse']");
+    const historyBtn = document.querySelector("[data-bs-target='#historyCollapse']");
+    const editForm = document.getElementById("editFormCollapse");
+    const historySection = document.getElementById("historyCollapse");
+
+    // Function to toggle one collapse section and close the other if open
+    function toggleSection(sectionToToggle, otherSection) {
+        const bsCollapse = new bootstrap.Collapse(sectionToToggle, { toggle: false });
+        if (sectionToToggle.classList.contains("show")) {
+            bsCollapse.hide();
+        } else {
+            if (otherSection.classList.contains("show")) {
+                new bootstrap.Collapse(otherSection, { toggle: false }).hide();
+            }
+            bsCollapse.show();
+        }
+    }
+
+    if (editBtn && historyBtn) {
+        editBtn.addEventListener("click", function () {
+            toggleSection(editForm, historySection);
+        });
+        historyBtn.addEventListener("click", function () {
+            toggleSection(historySection, editForm);
+        });
+    }
+
+    // Optional: Function to add a new update entry to a history list element
+    function addToHistory(updateText) {
+        const historyList = document.getElementById("historyList");
+        if (historyList) {
+            const newEntry = document.createElement("li");
+            newEntry.classList.add("list-group-item");
+            newEntry.textContent = updateText;
+            historyList.prepend(newEntry);
+        }
+    }
+});
+
+document.addEventListener("DOMContentLoaded", function () {
+    const resolveQueryForm = document.getElementById("resolveQueryForm");
+
+    if (resolveQueryForm) {
+        resolveQueryForm.addEventListener("submit", function (event) {
+            event.preventDefault();  // Prevent normal form submission
+
+            const resolutionComment = document.querySelector("[name='resolution_comment']").value.trim();
+            console.log('resolution')
+            if (!resolutionComment) {
+                Swal.fire({
+                    title: "Error!",
+                    text: "Resolution comment is required to resolve the query.",
+                    icon: "error",
+                    confirmButtonText: "OK"
+                });
+                return;  // Stop submission if no comment is given
+            }
+
+            const submitBtn = resolveQueryForm.querySelector("[type='submit']");
+            if (submitBtn) {
+                submitBtn.disabled = true;
+            }
+
+            // Show Processing Alert
+            Swal.fire({
+                title: "Processing...",
+                text: "Please wait while we resolve the query.",
+                allowOutsideClick: false,
+                showConfirmButton: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+
+            // Store flag in sessionStorage
+            sessionStorage.setItem("queryResolved", "true");
+
+            // Submit the form after showing the alert
+            setTimeout(() => {
+                resolveQueryForm.submit();
+            }, 1500);
+        });
+    }
+
+    // Show success alert only if the query was resolved
+    if (sessionStorage.getItem("queryResolved") === "true") {
+        sessionStorage.removeItem("queryResolved");  // Remove flag after showing alert
+
+        Swal.fire({
+            title: "Success!",
+            text: "Query resolved successfully!",
+            icon: "success",
+            confirmButtonText: "OK"
+        });
+    }
+});
+
+document.addEventListener("DOMContentLoaded", function () {
+    const submitQueryForm = document.getElementById("submitQueryForm");
+
+    if (submitQueryForm) {
+        submitQueryForm.addEventListener("submit", function (event) {
+            event.preventDefault();  // Prevent normal form submission
+
+            const queryComment = document.querySelector("[name='query_comment']").value.trim();
+            console.log(queryComment)
+            if (!queryComment) {
+                Swal.fire({
+                    title: "Error!",
+                    text: "Query comment is required to submit.",
+                    icon: "error",
+                    confirmButtonText: "OK"
+                });
+                return;  // Stop submission if no comment is given
+            }
+            
+
+            // Show Processing Alert
+            Swal.fire({
+                title: "Processing...",
+                text: "Please wait while we submit your query.",
+                allowOutsideClick: false,
+                showConfirmButton: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+
+            // Store flag in sessionStorage
+            sessionStorage.setItem("querySubmitted", "true");
+
+            // Submit the form after showing the alert
+            setTimeout(() => {
+                submitQueryForm.submit();
+            }, 1500);
+        });
+    }
+
+    // else{
+    //   alert('hello');
+    // }
+
+    // Show success alert only if the query was submitted
+    if (sessionStorage.getItem("querySubmitted") === "true") {
+        sessionStorage.removeItem("querySubmitted");  // Remove flag after showing alert
+
+        Swal.fire({
+            title: "Success!",
+            text: "Query submitted successfully!",
+            icon: "success",
+            confirmButtonText: "OK"
+        });
+    }
+});
+document.addEventListener("DOMContentLoaded", function() {
+  const addRefBtn = document.getElementById("addReferenceBtn");
+  const referenceInput = document.getElementById("referenceNumber");
+  const addReferenceForm = document.getElementById("addReferenceForm");
+  const referenceCollapse = new bootstrap.Collapse("#referenceCollapse", {toggle: false});
+
+  // Handle Add Reference button click
+  if (addRefBtn) {
+    addRefBtn.addEventListener("click", function(event) {
+      let existingRef = referenceInput.value.trim();
+      
+      if (existingRef !== "" && existingRef.toLowerCase() !== "none") {
+        // If reference already exists, show confirmation
+        Swal.fire({
+          title: "Reference Already Exists",
+          text: "A reference number is already stored. Do you want to change it?",
+          icon: "warning",
+          showCancelButton: true,
+          confirmButtonText: "Yes, change it",
+          cancelButtonText: "Cancel"
+        }).then((result) => {
+          if (result.isConfirmed) {
+            // Expand the card
+            referenceCollapse.show();
+          } else {
+            // Collapse the card if canceled
+            referenceCollapse.hide();
+          }
+        });
+
+        // Prevent default collapse behavior
+        event.preventDefault();
+      } else {
+        // If no reference exists, allow normal expansion
+        referenceCollapse.show();
+      }
+    });
+  }
+
+  // Intercept form submission for adding/changing the reference
+  if (addReferenceForm) {
+    addReferenceForm.addEventListener("submit", function(event) {
+      event.preventDefault(); // Prevent normal form submission
+
+      // Show processing alert
+      Swal.fire({
+        title: "Processing...",
+        text: "Submitting your reference number...",
+        allowOutsideClick: false,
+        showConfirmButton: false,
+        didOpen: () => {
+          Swal.showLoading();
+        }
+      });
+
+      // Submit form via AJAX using Fetch API
+      const formData = new FormData(addReferenceForm);
+      fetch(addReferenceForm.action, {
+        method: "POST",
+        body: formData
+      })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error("Submission failed");
+        }
+        return response.text();
+      })
+      .then(data => {
+        Swal.fire({
+          title: "Success!",
+          text: "Reference updated successfully!",
+          icon: "success",
+          timer: 1500,
+          showConfirmButton: false
+        }).then(() => {
+          location.reload();
+        });
+      })
+      .catch(error => {
+        Swal.fire({
+          title: "Error!",
+          text: "An error occurred while updating the reference.",
+          icon: "error",
+          confirmButtonText: "OK"
+        });
+      });
+    });
+  }
+});
+document.addEventListener("DOMContentLoaded", function () {
+    document.querySelectorAll("#resolveQueryCollapse form").forEach(form => {
+        form.addEventListener("submit", function (event) {
+            let resolutionCommentField = this.querySelector("textarea[name='resolution_comment']");
+
+            // Check if the resolution comment exists (only for the resolveQueryCollapse form)
+            if (resolutionCommentField) {
+                let resolutionComment = resolutionCommentField.value.trim();
+                if (!resolutionComment) {
+                    event.preventDefault(); // Prevent form submission
+
+                    Swal.fire({
+                        title: "Error!",
+                        text: "Resolution comment cannot be empty.",
+                        icon: "error",
+                        timer: 2000, // Show for 2 seconds
+                        showConfirmButton: false
+                    });
+
+                    return false; // Stop execution
+                }
+            }
+
+            // Show processing alert before actual submission
+            event.preventDefault(); // Prevent immediate submission
+            Swal.fire({
+                title: "Processing...",
+                text: "Please wait while your request is being submitted.",
+                allowOutsideClick: false,
+                showConfirmButton: false,
+                didOpen: () => {
+                    Swal.showLoading(); // Show loading animation
+                }
+            });
+
+            // Simulate a slight delay to show processing state before success message
+            // setTimeout(() => {
+            //     Swal.fire({
+            //         title: "Success!",
+            //         text: "Your changes have been saved successfully.",
+            //         icon: "success",
+            //         timer: 2000,
+            //         showConfirmButton: false
+            //     }).then(() => {
+            //         form.submit(); // Submit the form after success alert
+            //     });
+            // }, 1500); // Adjust delay as needed
+        });
+    });
+});
+document.addEventListener("DOMContentLoaded", function () {
+    document.querySelectorAll("#editFormCollapse form").forEach(form => {
+        form.addEventListener("submit", function (event) {
+            let resolutionCommentField = this.querySelector("textarea[name='resolution_comment']");
+
+            // Check if the resolution comment exists (only for the resolveQueryCollapse form)
+            if (resolutionCommentField) {
+                let resolutionComment = resolutionCommentField.value.trim();
+                if (!resolutionComment) {
+                    event.preventDefault(); // Prevent form submission
+
+                    Swal.fire({
+                        title: "Error!",
+                        text: "Resolution comment cannot be empty.",
+                        icon: "error",
+                        timer: 2000, // Show for 2 seconds
+                        showConfirmButton: false
+                    });
+
+                    return false; // Stop execution
+                }
+            }
+
+            // Show processing alert before actual submission
+            event.preventDefault(); // Prevent immediate submission
+            Swal.fire({
+                title: "Processing...",
+                text: "Please wait while your request is being submitted.",
+                allowOutsideClick: false,
+                showConfirmButton: false,
+                didOpen: () => {
+                    Swal.showLoading(); // Show loading animation
+                }
+            });
+
+            // Simulate a slight delay to show processing state before success message
+            setTimeout(() => {
+                Swal.fire({
+                    title: "Success!",
+                    text: "Your changes have been saved successfully.",
+                    icon: "success",
+                    timer: 2000,
+                    showConfirmButton: false
+                }).then(() => {
+                    form.submit(); // Submit the form after success alert
+                });
+            }, 1500); // Adjust delay as needed
+        });
+    });
+});
+</script>
+<script>
+  $(document).ready(function(){
+    // When any collapse element is shown, hide all others.
+    $('.collapse').on('show.bs.collapse', function () {
+      $('.collapse').not(this).collapse('hide');
+    });
+  });
+</script>
+
+{% endblock %}  

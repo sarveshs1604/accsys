@@ -1,0 +1,207 @@
+<!-- {% extends 'main.html' %}
+
+{% block content %}
+
+<main id="main" class="main" style="margin-left: 300px; max-width: 75%;">
+    <div class="pagetitle">
+        <h1 class="card-title">Submit Request</h1>
+    </div>
+
+    <section class="section">
+        <div class="card">
+            <div class="card-body pt-3">
+                <form id="submitform" method="POST" action="{% url 'submit_form' %}">
+                    {% csrf_token %}
+                 
+                    <div class="row">
+                        <div class="col-md-4">
+                            <label class="form-label">Document Number</label>
+                            <input type="text" class="form-control" value="{{ doc_number }}" disabled>
+                            <input type="hidden" name="doc_number" value="{{ doc_number }}">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Total Value</label>
+                            <input type="number" class="form-control" name="total_value" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">TDS Amount</label>
+                            <input type="number" class="form-control" name="tds_amount" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Bank Voucher Number</label>
+                            <input type="text" class="form-control" name="bank_voucher_number" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Expense Head</label>
+                            <input type="text" class="form-control" name="expense_head"required>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Client Name</label>
+                            <input type="text" class="form-control" name="client_name" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Start Date</label>
+                            <input type="date" class="form-control" name="start_date" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Vendor Name</label>
+                            <input type="text" class="form-control" name="vendor_name" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Vendor GST Number</label>
+                            <input type="text" class="form-control" name="vendor_gst_number" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Cost Centre / Department</label>
+                            <input type="text" class="form-control" name="cost_centre_department" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Department / Expense Code</label>
+                            <input type="text" class="form-control" name="department_expense_code" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Project Code</label>
+                            <input type="text" class="form-control" name="project_code" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Terminal Name</label>
+                            <input type="text" class="form-control" name="terminal_name" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Profit Centre / Segment</label>
+                            <input type="text" class="form-control" name="profit_centre_segment" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">TDS Application</label>
+                            <select class="form-select" name="tds_application">
+                                <option value="Yes">Yes</option>
+                                <option value="No">No</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">TDS Section</label>
+                            <input type="text" class="form-control" name="tds_section" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Reference Number</label>
+                            <input type="text" class="form-control" name="reference_number" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">ITC GST R2B</label>
+                            <input type="text" class="form-control" name="itc_gst_r2b" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">ITC Claimed</label>
+                            <input type="text" class="form-control" name="itc_claimed" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Vendor Type</label>
+                            <input type="text" class="form-control" name="vendor_type" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">ITC Type</label>
+                            <input type="text" class="form-control" name="itc_type" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="accountant">Assign Accountant:</label>
+                            <select name="accountant" id="accountant" required>
+                                <option value="">-- Select a User --</option>
+                                {% for user in users %}
+                                    <option value="{{ user.id }}">{{ user.username }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="mt-4 text-center">
+                        <button type="submit" class="btn btn-primary" onclick="confirmSubmission()">Submit Request</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </section>
+</main>
+
+<script>
+    $(document).ready(function () {
+        $("#submitform").submit(function (e) {
+            let isValid = true;
+
+            // Loop through all required fields
+            $("input[required], select[required], textarea[required]").each(function () {
+                if ($(this).val().trim() === "" || $(this).val() === null) {
+                    isValid = false;
+                    $(this).css("border", "2px solid red");  // Highlight empty fields
+                } else {
+                    $(this).css("border", "");  // Remove red border if filled
+                }
+            });
+
+            if (!isValid) {
+                e.preventDefault(); // Prevent form submission
+                alert("Please fill in all required fields.");
+            }
+        });
+
+        // Remove red border when user starts typing or selecting
+        $("input, select, textarea").on("input change", function () {
+            if ($(this).val().trim() !== "" && $(this).val() !== null) {
+                $(this).css("border", "");
+            }
+        });
+
+        // Confirmation popup before submitting
+        $("#submitform").on("submit", function (event) {
+            let confirmSubmit = confirm("Are you sure you want to submit this request?");
+            if (!confirmSubmit) {
+                event.preventDefault();
+            }
+        });
+    });
+    function confirmSubmission() {
+    Swal.fire({
+        title: "Are you sure?",
+        // text: "Fill All The Detail",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonColor: "#3085d6",
+        // cancelButtonColor: "#d33",
+    }).then((result) => {
+        if (result.isConfirmed) {
+            showProcessing();
+        }
+    });
+}   
+function showProcessing() {
+    Swal.fire({
+        title: "Processing...",
+        text: "Please wait while we submit your form.",
+        icon: "info",
+        allowOutsideClick: false,
+        allowEscapeKey: false,
+        showConfirmButton: false,
+        didOpen: () => {
+            Swal.showLoading();
+        }
+    });
+
+    setTimeout(() => {
+        document.getElementById("submitForm").submit();
+    }, 2000);  // Simulating processing delay
+}
+
+// Show success alert after form submission (handled in Django response)
+document.addEventListener("DOMContentLoaded", function() {
+    const successMessage = "{{ success_message|escapejs }}";  // Django context variable
+    if (successMessage) {
+        Swal.fire({
+            title: "Success!",
+            text: successMessage,
+            icon: "success",
+            confirmButtonText: "OK"
+        });
+    }
+});
+</script>
+
+{% endblock %} -->

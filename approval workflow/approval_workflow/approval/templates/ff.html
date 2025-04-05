@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Approval Notification</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            padding: 20px;
+        }
+        .email-container {
+            max-width: 600px;
+            background-color: #ffffff;
+            padding: 20px;
+            margin: 0 auto;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .content {
+            font-size: 16px;
+            line-height: 1.6;
+        }
+        .btn {
+            display: inline-block;
+            background-color: #007bff;
+            color: #ffffff;
+            padding: 10px 15px;
+            text-decoration: none;
+            border-radius: 5px;
+            margin-top: 15px;
+        }
+        .footer {
+            margin-top: 20px;
+            font-size: 14px;
+            text-align: center;
+            color: #777777;
+        }
+        .company-logo {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .company-logo img {
+            max-width: 200px;
+        }
+    </style>
+</head>
+<body>
+    <div class="email-container">
+
+
+        <div class="header">
+            <h2>Approval Required</h2>
+        </div>
+
+        <div class="content">
+            <p>Dear <strong>{{ approver_name }}</strong>,</p>
+
+            <p>You have been assigned as the first approver for the document <strong>ID: {{ doc_number }}</strong>.</p>
+            <p>{{ email_body }}</p>
+
+
+            <p>Please review and take action on this request at your earliest convenience.</p>
+
+            <p>Thank you for your time and cooperation.</p>
+
+            <p>Best Regards,</p>
+            <p><strong>Accsys Consulting</strong></p>
+        </div>
+
+        <div class="footer">
+            <p>This is an automated email. Please do not reply to this message.</p>
+        </div>
+
+        <div class="company-logo">
+            <img src="{{ company_logo }}" alt="Company Logo">
+        </div>
+    </div>
+</body>
+</html>

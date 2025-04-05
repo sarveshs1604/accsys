@@ -1,0 +1,350 @@
+{% extends 'main.html' %}
+
+{% block content %}
+
+<main id="main" class="main" style="margin-left: 300px; max-width: 75%;">
+    <style>
+        .dataTables_filter {
+    display: none;
+}
+        .rectangle {
+    position: absolute;
+    top: 100px;  /* Adjust Y-axis position */
+    left: 50px;  /* Adjust X-axis position */
+    width: 300px; /* Width of the rectangle */
+    height: 50px; /* Height of the rectangle */
+    background-color: #0d47a1; /* Dark Blue */
+    border-radius: 5px; /* Optional: rounded edges */
+}
+    </style>
+    <!-- <div class="pagetitle">
+        <h1 class="card-title">Approval</h1>
+    </div> -->
+    <div class="pagetitle">
+        <h1 >Approval</h1>
+        <nav>
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="#">Dashboard</a></li>
+                <li class="breadcrumb-item">Approval</li>
+            </ol>
+        </nav>
+    </div>
+    <section class="section">
+        <div class="card">
+            <div class="card-body pt-3">
+                <div class="d-flex justify-content-end mb-3">
+                    <button id="download-pdf" class="btn btn-danger me-2">
+                        <i class="fas fa-file-pdf"></i> Download PDF
+                    </button>
+                    <button id="download-excel" class="btn btn-success">
+                        <i class="fas fa-file-excel"></i> Download Excel
+                    </button>
+                </div>
+                <!-- Tabs -->
+                <ul class="nav nav-tabs nav-tabs-bordered">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'document' %}">Request Form</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'approval_list' %}">Pending Approvals</a>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#approval-details">Approval History</button>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'request_history' %}">Request History</a>
+                    </li>
+                </ul>
+                <br>
+                <div style="position: absolute; top: 145px; left: 640px; width: 220px; height: 50px; background-color: #ffffff;"></div>
+                <!-- <div class="d-flex justify-content-between align-items-center">
+                    <input type="text" id="tableSearch" class="form-control form-control-sm w-auto" placeholder="Search...">
+                </div> -->
+                
+
+                <!-- <input type="text" id="globalSearch" class="form-control mb-3" placeholder="Global Search"> -->
+
+                <!-- Tab Content -->
+                <div class="tab-content pt-2">
+                    <!-- Requests Created by the User -->
+                    <div class="tab-pane fade show active" id="requests-made">
+                        <div class="table-response">
+                            <!-- <table id="approvalTable"
+                                    data-toggle="table"
+                                    data-search="true"
+                                    data-pagination="true"
+                                    data-sortable="true"
+                                    class="table table-striped"> -->
+                            <table class="table datatable">
+                                <thead>
+                                    <tr>
+                                        <th>Document ID</th>
+                                        <th>Requester</th>
+                                        <th>Approval Status</th>                                </tr>
+                                </thead>
+                                <tbody id="tableBody">
+                                    {% for approval in approvals %}
+                                    <tr>
+                                        <td>
+                                            <!-- Clickable Doc ID -->
+                                            <a href="#" class="doc-link" data-doc-id="{{ approval.request.id }}">{{ approval.request.doc_number }}</a>
+                                        </td>
+                                        <td>{{ approval.request.created_by.username }}</td>
+                                        <td>
+                                            {% if approval.status == "Approved" %}
+                                                <span class="badge bg-success">Approved By You</span>
+                                            {% elif approval.status == "Rejected" %}
+                                                <span class="badge bg-danger">Rejected By You</span>
+                                            {% else %}
+                                                <span class="badge bg-warning text-dark">Pending</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% empty %}
+                                    <tr>
+                                        <td colspan="4" class="text-center">No approvals to display</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="modal fade" id="requestDetailModal" tabindex="-1" aria-labelledby="requestDetailModalLabel" aria-hidden="true">
+                            <div class="modal-dialog modal-lg modal-dialog-centered">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title">Request Details</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <p><strong>Document ID:</strong> <span id="modalDocId"></span></p>
+                                        <p><strong>Created By:</strong> <span id="modalCreatedBy"></span></p>
+                                        <p><strong>Description:</strong> <span id="modalDescription"></span></p>
+                                        <p><strong>Created At:</strong> <span id="modalCreatedAt"></span></p>
+                                        
+                                        <!-- Highlight Points -->
+                                        <h6><strong>Highlight Points</strong> </h6>
+                                        <ul id="modalHighlightPoints"></ul>
+
+                                        <!-- Requirements Table -->
+                                        <h6><strong>Requirements</strong> </h6>
+                                        <!-- <input type="text" id="requirementSearch" class="form-control mb-2" placeholder="Search requirements..."> -->
+                                        <div class="p-3 border rounded shadow-sm" style="background-color: #f8f9fa;">
+                                        <div class="d-flex justify-content-end mb-2">
+                                            <div class="input-group" style="width: 250px;">
+                                                <input type="text" id="requirementSearch" class="form-control" placeholder="Search requirements...">
+                                                <span class="input-group-text"><i class="bi bi-search"></i></span>
+                                            </div>
+                                        </div>
+                                        <div style="max-height: 300px;overflow-y: auto;">
+                                            <table class="table table-bordered">
+                                            <thead>
+                                                <tr>
+                                                    <th>Requirement</th>
+                                                    <th>Quantity</th>
+                                                    <th>Price</th>
+                                                    <th>Amount</th>
+                                                    <th>Description</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="modalRequirements"></tbody>
+                                        </table>
+                                        </div>
+                                        </div>
+
+                                        <!-- <h6><strong>Comments</strong> </h6>
+                                        <ul id="modalComments"></ul> -->
+                                        <h6>Attached Document</h6>
+                                        <p>
+                                            <a id="modal-document-link" href="#" target="_blank" class="btn btn-outline-primary">
+                                                View Document
+                                            </a>
+                                        </p>
+
+                                        <div id="approvalQueryDocumentsSection" class="d-none">
+                                            <h6>Query Documents</h6>
+                                            <div id="approval-query-doc-buttons" class="d-flex flex-wrap gap-2"></div>
+                                        </div>
+
+                                        <!-- Comments Section (ONLY shows the logged-in user's comments) -->
+                                        <div class="row">
+                                            <div class="col-md-12">
+                                                <h6><strong>Your Comment</strong></h6>
+                                                <ul id="modalApprovers"></ul>
+                                            </div>
+                                        </div>
+                                        
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+<script>
+
+document.addEventListener("DOMContentLoaded", function () {
+    document.querySelectorAll(".doc-link").forEach(link => {
+        link.addEventListener("click", function (event) {
+            event.preventDefault();
+            let docId = this.getAttribute("data-doc-id");
+
+            fetch(`/get_request_details_user/${docId}/`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        document.getElementById("modalDocId").textContent = data.doc_number;
+                        document.getElementById("modalDescription").textContent = data.description;
+                        document.getElementById("modalCreatedBy").textContent = data.created_by;
+                        document.getElementById("modalCreatedAt").textContent = data.created_at;
+
+                        let highlightContainer = document.getElementById("modalHighlightPoints");
+                        highlightContainer.innerHTML = "";
+                        data.highlights.forEach(point => {
+                            let li = document.createElement("li");
+                            li.textContent = point;
+                            highlightContainer.appendChild(li);
+                        });
+
+                        let requirementsContainer = document.getElementById("modalRequirements");
+                        requirementsContainer.innerHTML = "";
+                        data.requirements.forEach(req => {
+                            let shortDesc = req.description.length > 20 ? req.description.slice(0, 20) + "..." : req.description;
+                            let row = `
+                                <tr>
+                                    <td>${req.requirement_name}</td>
+                                    <td>${req.quantity}</td>
+                                    <td>${req.price}</td>
+                                    <td>${req.amount}</td>
+                                    <td>
+                                        <span class="short-text">${shortDesc}</span>
+                                        <span class="full-text d-none">${req.description}</span>
+                                        ${req.description.length > 20 ? '<button class="btn btn-link toggle-text">Read More</button>' : ''}
+                                    </td>
+                                </tr>
+                            `;
+                            requirementsContainer.innerHTML += row;
+                        });
+
+                        let approversContainer = document.getElementById("modalApprovers");
+                        approversContainer.innerHTML = "";
+                        if (data.approvers.length > 0) {
+                            let approver = data.approvers[0];  // Since only one user’s comment is returned
+                            let li = document.createElement("li");
+                            li.textContent = `${approver.name} - ${approver.status} : ${approver.comments}`;
+                            approversContainer.appendChild(li);
+                        } else {
+                            let li = document.createElement("li");
+                            li.textContent = "No comments found.";
+                            approversContainer.appendChild(li);
+                        }
+
+                        
+
+                        // Add event listeners for Read More / Read Less
+                        setTimeout(() => {
+                            document.querySelectorAll(".toggle-text").forEach(button => {
+                                button.addEventListener("click", function () {
+                                    let shortText = this.previousElementSibling.previousElementSibling;
+                                    let fullText = this.previousElementSibling;
+
+                                    if (fullText.classList.contains("d-none")) {
+                                        fullText.classList.remove("d-none");
+                                        shortText.classList.add("d-none");
+                                        this.textContent = "Read Less";
+                                    } else {
+                                        fullText.classList.add("d-none");
+                                        shortText.classList.remove("d-none");
+                                        this.textContent = "Read More";
+                                    }
+                                });
+                            });
+                        }, 100);
+
+                        let docLink = document.getElementById("modal-document-link");
+                        if (data.document_url) {
+                            docLink.href = data.document_url;
+                            docLink.classList.remove("d-none");
+                        } else {
+                            docLink.classList.add("d-none");
+                        }
+
+                        // ✅ Create Query Document Buttons
+                        let queryDocumentsContainer = document.getElementById("approval-query-doc-buttons");
+                        queryDocumentsContainer.innerHTML = "";
+                        if (data.query_documents.length > 0) {
+                            document.getElementById("approvalQueryDocumentsSection").classList.remove("d-none");
+                            data.query_documents.forEach(doc => {
+                                let btn = document.createElement("a");
+                                btn.href = doc.url;
+                                btn.target = "_blank";
+                                btn.className = "btn btn-outline-primary";
+                                btn.textContent = "View Document";
+                                queryDocumentsContainer.appendChild(btn);
+                            });
+                        } else {
+                            document.getElementById("approvalQueryDocumentsSection").classList.add("d-none");
+                        }
+
+
+                        let modal = new bootstrap.Modal(document.getElementById("requestDetailModal"));
+                        modal.show();
+                    } else {
+                        alert("Error fetching request details!");
+                    }
+                })
+                .catch(error => console.error("Error:", error));
+        });
+    });
+});
+document.getElementById("download-pdf").addEventListener("click", function () {
+    let historyType = window.location.pathname.includes("request_history") ? "request" : "approval";
+    window.open(`/download_history/pdf/${historyType}/`, "_blank");
+});
+
+document.getElementById("download-excel").addEventListener("click", function () {
+    let historyType = window.location.pathname.includes("request_history") ? "request" : "approval";
+    window.open(`/download_history/excel/${historyType}/`, "_blank");
+});
+document.addEventListener("DOMContentLoaded", function () {
+    document.getElementById("requirementSearch").addEventListener("keyup", function () {
+        let filter = this.value.toLowerCase();
+        let rows = document.querySelectorAll("#modalRequirements tr");
+
+        rows.forEach(row => {
+            let text = row.innerText.toLowerCase();
+            row.style.display = text.includes(filter) ? "" : "none";
+        });
+    });
+});
+// not working search
+document.addEventListener("DOMContentLoaded", function () {
+    let tableElement = document.querySelector(".datatable");
+    if (tableElement) {
+        new simpleDatatables.DataTable(tableElement);
+    }
+});
+document.addEventListener("DOMContentLoaded", function () {
+    let searchInput = document.getElementById("tableSearch");
+    if (searchInput) {
+        searchInput.addEventListener("keyup", function () {
+            let searchText = this.value.toLowerCase();
+            let tableRows = document.querySelectorAll("#tableBody tr");
+
+            tableRows.forEach(row => {
+                let rowText = row.textContent.toLowerCase();
+                row.style.display = rowText.includes(searchText) ? "" : "none";
+            });
+        });
+    } else {
+        console.error("Search input not found!");
+    }
+});
+
+</script>
+
+
+{% endblock content %}

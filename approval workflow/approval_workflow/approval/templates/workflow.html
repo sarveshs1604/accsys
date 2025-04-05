@@ -1,0 +1,50 @@
+{% extends 'main.html' %}
+{% block content %}
+
+
+<body>
+
+ 
+  
+  <main id="main" class="main">
+
+    <div class="pagetitle">
+      <h1>Workflow Management</h1>
+      <nav>
+        <ol class="breadcrumb">
+          <li class="breadcrumb-item"><a href="index.html">Home</a></li>
+          <li class="breadcrumb-item">Icons</li>
+          <li class="breadcrumb-item active">Remix</li>
+        </ol>
+      </nav>
+    </div><!-- End Page Title -->
+
+    <section class="section">
+      <div class="iconslist">
+
+        <div class="icon" >
+            <a href="{% url 'check_signature' %}" class="card-title">
+          <i class="ri-file-ppt-line"></i>
+          <div class="label">Approval</div>
+        </a>
+        </div>
+
+        <div class="icon" >
+          <a href="{% url 'form_list' %}" class="card-title">
+        <i class="ri-file-ppt-line"></i>
+        <div class="label">Expense Booking</div>
+      </a>
+      </div>
+        
+
+      </div>
+
+      
+    </section>
+
+  </main><!-- End #main -->
+
+
+</body>
+
+{% endblock content %}

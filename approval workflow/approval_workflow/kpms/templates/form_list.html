@@ -1,0 +1,511 @@
+{% extends 'main.html' %}
+
+{% block content %}
+
+
+<main id="main" class="main" style="margin-left: 300px; max-width: 75%;">
+    <style>
+        #edit-form {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.5s ease-in-out;
+        }
+    
+        #edit-form.show {
+            max-height: 500px; /* Adjust this height as needed */
+        }
+    </style>
+    <div class="d-flex justify-content-between align-items-center">
+        <div class="pagetitle">
+            <h1>Submitted Forms</h1>
+            <nav>
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="#">Dashboard</a></li>
+                    <li class="breadcrumb-item active">Submitted Forms</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+    <!-- {% if validator_forms %}
+  <div class="mt-4">
+    <button class="btn btn-warning" type="button" data-bs-toggle="collapse" data-bs-target="#validatorCard" aria-expanded="false" aria-controls="validatorCard">
+      Validate
+    </button>
+  </div> -->
+  <div class="collapse mt-3" id="validatorCard">
+    <div class="card card-body">
+        <br>
+      <h5>Forms Pending Your Validation</h5>
+      <table class="table datatable">
+        <thead>
+          <tr>
+            <th>S.no</th>
+            <th>Document Number</th>
+            <th>Vendor Name</th>
+            <th>Status</th>
+            <th>Client</th>
+            <th>created at</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for vform in validator_forms %}
+          <tr>
+            <td>{{ forloop.counter }}</td>
+            <td>
+                <!-- Link to the validation page or modal -->
+                <a href="{% url 'validate_form' vform.id %}">{{ vform.doc_number }}</a>
+            </td>
+            <td>{{ vform.vendor_name }}</td>
+            <td>{{ vform.status }}</td>
+            <td>{{ vform.created_by.username }}</td>
+            <td>{{ vform.created_at|date:"d-m-Y H:i" }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+{% endif %}
+  <br>
+    <!-- Create Booking Button -->
+    <!-- <div>
+        <button class="btn btn-primary" onclick="toggleBookingForm()">Create Booking</button>
+    </div>
+    <br>
+    <div>
+        {% if request.user.is_superuser %}
+        <a href="{% url 'masters' %}" class="btn btn-dark">Masters</a>
+        {% endif %}
+    </div> -->
+
+  <div class="d-flex align-items-center gap-2 mt-4">
+    {% if validator_forms %}
+    <button class="btn btn-warning" type="button" data-bs-toggle="collapse" data-bs-target="#validatorCard" aria-expanded="false" aria-controls="validatorCard">
+      Validate
+    </button>
+    {% endif %}
+
+    <button class="btn btn-primary" onclick="toggleBookingForm()">Create Booking</button>
+
+    {% if request.user.is_superuser %}
+      <a href="{% url 'masters' %}" class="btn btn-dark">Masters</a>
+    {% endif %}
+    <!-- Button to Open Modal -->
+    <button class="btn btn-info" data-bs-toggle="modal" data-bs-target="#statusModal">
+        View Form Status
+    </button>
+  </div>
+
+  <!-- Modal for Form Status Overview -->
+<!-- <div class="modal fade" id="StatusModal" tabindex="-1" aria-labelledby="StatusModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="StatusModalLabel">Form Status Overview</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <ul class="list-group">
+            <li class="list-group-item">📂 In Progress: <strong id="inProgressCount">{{ in_progress_count }}</strong></li>
+            <li class="list-group-item">❓ Query Raised: <strong id="queryRaisedCount">{{ query_raised_count }}</strong></li>
+            <li class="list-group-item">✅ Validation (All Types): <strong id="validationCount">{{ validation_count }}</strong></li>
+            <li class="list-group-item">✔️ Closed: <strong id="closedCount">{{ closed_count }}</strong></li>
+          </ul>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div> -->
+
+  <!-- Modal Markup -->
+<div class="modal fade" id="statusModal" tabindex="-1" aria-labelledby="statusModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="statusModalLabel">Form Status Summary</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <ul class="list-group">
+          <li class="list-group-item d-flex justify-content-between align-items-center">
+            In Progress
+            <span class="badge bg-primary">{{ in_progress_count }}</span>
+          </li>
+          <li class="list-group-item d-flex justify-content-between align-items-center">
+            Query Raised
+            <span class="badge bg-primary">{{ query_raised_count }}</span>
+          </li>
+          <li class="list-group-item d-flex justify-content-between align-items-center">
+            Validation
+            <span class="badge bg-primary">{{ validation_count }}</span>
+          </li>
+          <li class="list-group-item d-flex justify-content-between align-items-center">
+            Closed
+            <span class="badge bg-primary">{{ closed_count }}</span>
+          </li>
+        </ul>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+    <!-- Booking Form (Initially Hidden) -->
+    <div id="bookingForm" style="display: none; margin-top: 20px;">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">New Booking</h5>
+                <form id="submitBookingForm" method="POST" action="{% url 'submit_form' %}" enctype="multipart/form-data">
+                    {% csrf_token %}
+
+                    <div class="row">
+                        <!-- Left Column -->
+                        <div class="col-md-6">
+                            <!-- Auto-Generated Document Number -->
+                            <div class="mb-3">
+                                <label class="form-label">Document Number</label>
+                                <input type="text" id="docNumber" name="doc_number" class="form-control" readonly>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Vendor Name</label>
+                                <input type="text" name="vendor_name" class="form-control">
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Reference Number</label>
+                                <input type="text" name="reference_number" class="form-control" readonly placeholder="Filled by Assignee">
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Invoice Value</label>
+                                <input type="number" name="invoice_value" class="form-control" required step="0.01">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Assign Assignees</label>
+                                <select style="width:70%" id="userSelect" name="selected_assignees" class="form-control select2" multiple required>
+                                    {% for user in users %}
+                                    {% if user.id != request.user.id %} 
+                                        <option value="{{ user.id }}">{{ user.username }}</option>
+                                    {% endif %}
+                                    {% empty %}
+                                        <option value="">No assignees available</option>
+                                    {% endfor %}
+                                </select>
+                                <!-- <label class="form-label">Assign Assignees</label>
+                                <select id="userSelect" name="selected_assignees" class="form-control" multiple required>
+                                    {% for user in users %}
+                                        {% if user.id != request.user.id %} 
+                                        <option value="{{ user.id }}">{{ user.username }}</option>
+                                        {% endif %}
+                                    {% endfor %}
+                                </select> -->
+                            </div>
+                            <!-- <div class="mb-3">
+                                <label class="form-label">Assignee</label>
+                                <select id="userSelect" name="selected_user" class="form-control" required>
+                                    <option value="">Select User</option>
+                                    {% for user in users %}
+                                        {% if user.id != request.user.id %}  
+                                            <option value="{{ user.id }}">{{ user.username }}</option>
+                                        {% endif %}
+                                    {% endfor %}
+                                </select>
+                            </div>                             -->
+                        </div>
+
+                        <!-- Right Column -->
+                        <div class="col-md-6">
+                              <div class="mb-3">
+                                <label class="form-label">Document Type</label>
+                                <select name="document_type" class="form-control" required>
+                                  <option value="">Select Document Type</option>
+                                  {% for dt in document_types %}
+                                    <option value="{{ dt.id }}">{{ dt.name }}</option>
+                                  {% endfor %}
+                                </select>
+                            </div>
+                              <!-- New Field: Remarks -->
+                              <div class="mb-3">
+                                <label class="form-label">Remarks</label>
+                                <textarea name="remarks" class="form-control"></textarea>
+                              </div>
+                              <!-- New Field: Special Instructions -->
+                              <div class="mb-3">
+                                <label class="form-label">Special Instructions</label>
+                                <textarea name="special_instructions" class="form-control"></textarea>
+                              </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Upload Documents (5MB Each)</label>
+                                <input type="file" name="documents" class="form-control" multiple required>
+                                <small class="text-muted">Max 5MB Each</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button type="button" class="btn btn-success" onclick="confirmSubmission()">Submit</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <br>
+
+    <!-- Form List Table -->
+    <section class="section">
+        <div class="card">
+            <div class="card-body pt-3">
+                <!-- <div class="table-responsive"> -->
+                <div class="table-responsive">   
+                    <table class="table datatable text-nowrap">
+                        <thead>
+                            <tr>
+                                <th>S.no</th>
+                                <th class="text-nowrap">Document Number</th>
+                                <th class="text-nowrap">Vendor Name</th>
+                                <th class="text-nowrap">Client Name</th>
+                                <th class="text-nowrap">Assignee</th>
+                                <th class="text-nowrap">Status</th>
+                                <th class="text-nowrap">Created At</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for form in forms %}
+                            <tr>
+                                <td>{{ forloop.counter }}</td>
+                                <td><a href="{% url 'form_detail' form.id %}" class="text-primary">
+                                    {{ form.doc_number }}
+                                </a>
+                                </td>
+                                <td>{{ form.vendor_name }}</td>
+                                <td>{{ form.created_by }}</td>
+                                <td>
+                                    <a href="#" data-bs-toggle="modal" data-bs-target="#assigneesModal{{ form.id }}">View Assignees</a>
+                                    
+                                    <!-- Bootstrap Modal for Assignees -->
+                                    <div class="modal fade" id="assigneesModal{{ form.id }}" tabindex="-1" aria-labelledby="assigneesModalLabel{{ form.id }}" aria-hidden="true">
+                                      <div class="modal-dialog">
+                                        <div class="modal-content">
+                                          <div class="modal-header">
+                                            <h5 class="modal-title" id="assigneesModalLabel{{ form.id }}">Assignees for {{ form.doc_number }}</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                          </div>
+                                          <div class="modal-body">
+                                            <ul class="list-group">
+                                              {% for assignee in form.assignees.all %}
+                                                  <li class="list-group-item">{{ assignee.username }}</li>
+                                              {% empty %}
+                                                  <li class="list-group-item">No assignees assigned.</li>
+                                              {% endfor %}
+                                            </ul>
+                                          </div>
+                                          <div class="modal-footer">
+                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="badge 
+                                        {% if form.status == 'In Progress' %} bg-warning 
+                                        {% elif form.status == 'Raise Query' %} bg-danger 
+                                        {% elif form.status == 'Closed' %} bg-success 
+                                        {% elif form.status == 'Validation' %} bg-info
+                                        {% elif form.status == 'Client Validation' %} bg-info
+                                        {% elif form.status == 'Validation In Progress' %} bg-info
+                                        {% endif %}">
+                                        {{ form.status }}
+                                    </span>
+                                </td>
+                    
+                                <td>{{ form.created_at|date:"d-m-Y H:i" }}</td> 
+
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="5" class="text-center text-muted">No forms submitted yet.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/js/select2.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/css/select2.min.css">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/css/select2.min.css" rel="stylesheet" />
+
+<!-- Include jQuery and Select2 JS -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/js/select2.min.js"></script>
+<script>
+// Generate Random Document Number
+function generateDocNumber() {
+    let randomNum = Math.floor(10000000 + Math.random() * 90000000);
+    document.getElementById("docNumber").value = "DOC-" + randomNum;
+}
+
+// Toggle Booking Form Visibility
+function toggleBookingForm() {
+    let formDiv = document.getElementById("bookingForm");
+
+    if (formDiv.style.display === "none" || formDiv.style.display === "") {
+        formDiv.style.display = "block";
+        formDiv.scrollIntoView({ behavior: "smooth" }); // Scroll down to form
+        generateDocNumber(); // Generate Doc Number on Form Open
+    } else {
+        formDiv.style.display = "none";
+    }
+}
+
+function confirmSubmission() {
+    const form = document.getElementById("submitBookingForm");
+    // Show processing alert.
+    Swal.fire({
+        title: "Processing...",
+        text: "Submitting your query, please wait...",
+        allowOutsideClick: false,
+        showConfirmButton: false,
+        didOpen: () => {
+            Swal.showLoading();
+        }
+    });
+
+    // Submit the form via AJAX (Fetch API).
+    const formData = new FormData(form);
+    fetch(form.action, {
+        method: "POST",
+        body: formData
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error("Submission failed");
+        }
+        return response.text();  // or response.json() if your view returns JSON
+    })
+    .then(data => {
+        // After processing, show success alert then reload.
+        Swal.fire({
+            title: "Success!",
+            text: "Query submitted successfully!",
+            icon: "success",
+            confirmButtonText: "OK",
+            timer: 1500,
+        }).then(() => {
+            location.reload();
+        });
+    })
+    .catch(error => {
+        Swal.fire({
+            title: "Error!",
+            text: "Please Fill All The Fields.",
+            icon: "error",
+            confirmButtonText: "OK"
+        });
+    });
+}
+
+
+// Show Confirmation Alert before Submission
+// function confirmSubmission() {
+//     Swal.fire({
+//         title: "Are you sure?",
+//         text: "Do you want to submit this booking?",
+//         //icon: "warning",
+//         showCancelButton: true,
+//         confirmButtonColor: "#3085d6",
+//         cancelButtonColor: "#d33",
+//         confirmButtonText: "Yes, submit it!"
+//     }).then((result) => {
+//         if (result.isConfirmed) {
+//             showProcessing();
+//         }
+//     });
+// }
+
+// // Show Processing Alert
+// function showProcessing() {
+//     Swal.fire({
+//         title: "Processing...",
+//         text: "Please wait while we submit your booking.",
+//         //icon: "info",
+//         allowOutsideClick: false,
+//         showConfirmButton: false,
+//         didOpen: () => {
+//             Swal.showLoading();
+//         }
+//     });
+
+//     setTimeout(() => {
+//         document.getElementById("submitBookingForm").submit();
+//     }, 2000);  // Simulating processing delay
+// }
+
+// Generate Doc Number on Page Load
+window.onload = generateDocNumber;
+// $(document).ready(function() {
+//         $("#userSelect").select2({
+//             placeholder: "Select a user",
+//             allowClear: true
+//         });
+//     });
+
+document.getElementById("edit-btn").addEventListener("click", function() {
+    document.getElementById("edit-form").addEventListener("click", function() {
+        let editForm = document.getElementById("edit-form");
+        editForm.classList.toggle("show"); // Expands down
+    });
+});
+
+
+$(document).ready(function() {
+    $("#client").change(function() {
+        let clientId = $(this).val();
+        let assigneeDropdown = $("#userSelect");
+
+        assigneeDropdown.empty();
+
+        if (clientId) {
+            $.ajax({
+                url: "{% url 'get_assignees' %}",  // Create this URL in Django
+                data: {client_id: clientId},
+                dataType: "json",
+                success: function(response) {
+                    $.each(response.assignees, function(index, assignee) {
+                        assigneeDropdown.append('<option value="' + assignee.assignee_id + '">' + assignee.assignee_username + '</option>');
+                    });
+                }
+            });
+        }
+    });
+});
+
+
+
+
+</script>
+<script>document.addEventListener("DOMContentLoaded", function () {
+    document.getElementById("inProgressCount").textContent = "{{ in_progress_count }}";
+    document.getElementById("queryRaisedCount").textContent = "{{ query_raised_count }}";
+    document.getElementById("validationCount").textContent = "{{ validation_count }}";
+    document.getElementById("closedCount").textContent = "{{ closed_count }}";
+  });</script>
+
+<script>$(document).ready(function() {
+  $('#userSelect').select2({
+      placeholder: "Select users",
+      allowClear: true
+  });
+  });</script>
+{% endblock %}

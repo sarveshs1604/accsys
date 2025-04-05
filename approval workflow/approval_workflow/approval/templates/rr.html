@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Approval Request Rejected</title>
+</head>
+<body style="font-family: Arial, sans-serif; padding: 20px;">
+    
+    <p>Dear {{ requester_name }},</p>
+
+    <p>Unfortunately, your request for <strong>Document ID: {{ doc_number }}</strong> has been rejected.</p>
+
+    <p><strong>Rejected By:</strong> {{ rejected_by }}</p>
+    <p><strong>Reason:</strong> {{ rejection_reason }}</p>
+
+    <p>If you have any questions, please contact the approver.</p>
+
+    <p>With regards,<br>Accsys Consulting</p>
+    <div style="text-align: center;">
+        <img src="{{ company_logo }}" alt="Company Logo" style="width: 200px; margin-bottom: 20px;">
+    </div>
+</body>
+</html>
+

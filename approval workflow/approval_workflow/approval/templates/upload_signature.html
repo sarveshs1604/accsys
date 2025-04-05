@@ -1,0 +1,101 @@
+{% extends "main.html" %}
+
+{% block content %}
+<main id="main" class="main" style="margin-left: 300px; max-width: 75%;">
+<div class="container">
+    <h2>Upload Your Digital Signature</h2>
+    {% if request.user.userprofile.signature %}
+    <div class="text-end">
+        <a href="{% url 'document' %}" class="btn btn-secondary mt-2 float-end">Back</a>
+    </div>
+    {% endif %}
+
+    <br>
+    
+
+    <!-- ✅ Show the Logged-in User Info -->
+    <p><strong>Uploading Signature for:</strong> {{ request.user.username }}</p>
+
+    <form method="POST" enctype="multipart/form-data">
+        {% csrf_token %}
+        <input type="file" class="form-control" name="signature" id="signatureInput" accept="image/*" required>
+        <br>
+        <button type="submit" class="btn btn-primary" >Upload Signature</button>
+
+    </form>
+
+    {% if request.user.userprofile.signature %}
+        <h5 class="mt-3">Current Signature:</h5>
+        <img id="currentSignature" src="{{ request.user.userprofile.signature.url }}" alt="Signature" width="200">
+        <br>
+        <button id="clearSignature" class="btn btn-danger mt-2">Clear Signature</button>
+    {% endif %}
+</div>
+</main>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        let signatureForm = document.getElementById("signatureForm");
+    
+        if (signatureForm) {
+            signatureForm.addEventListener("submit", function (event) {
+                event.preventDefault();
+    
+                let fileInput = document.getElementById("signatureInput");
+                let file = fileInput.files[0];
+    
+                if (!file) {
+                    Swal.fire("Error", "Please upload a signature before submitting!", "error");
+                    return;
+                }
+    
+                let formData = new FormData();
+                formData.append("signature", file);
+                formData.append("csrfmiddlewaretoken", document.querySelector("[name=csrfmiddlewaretoken]").value);
+    
+                fetch("{% url 'upload_signature' %}", {
+                    method: "POST",
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        Swal.fire("Success", "Signature uploaded successfully!", "success")
+                            .then(() => location.reload());  // ✅ Reload after successful upload
+                    } else {
+                        Swal.fire("Error", data.error, "error");
+                    }
+                })
+                .catch(error => {
+                    console.error("Upload Error:", error);
+                    Swal.fire("Error", "Failed to upload signature!", "error");
+                });
+                this.submit();
+            });
+        }
+    
+        // ✅ Handle Clearing Signature
+        let clearSignatureBtn = document.getElementById("clearSignature");
+        if (clearSignatureBtn) {
+            clearSignatureBtn.addEventListener("click", function () {
+                fetch("{% url 'clear_signature' %}", { method: "POST", headers: { "X-CSRFToken": document.querySelector("[name=csrfmiddlewaretoken]").value }})
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        Swal.fire("Success", "Signature removed successfully!", "success")
+                            .then(() => location.reload());  // ✅ Reload after clearing signature
+                    } else {
+                        Swal.fire("Error", data.error, "error");
+                    }
+                })
+                .catch(error => {
+                    console.error("Error clearing signature:", error);
+                    Swal.fire("Error", "Failed to remove signature!", "error");
+                });
+            });
+        }
+    });
+</script>
+
+{% endblock %}
+
